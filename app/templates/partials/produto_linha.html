@@ -1,0 +1,34 @@
+<tr id="produto-{{ produto.id }}" class="hover:bg-gray-50">
+  <td class="px-4 py-3 font-medium text-gray-800">{{ produto.nome }}</td>
+  <td class="px-4 py-3 text-right text-gray-700">R$ {{ "%.2f"|format(produto.preco) }}</td>
+  <td class="px-4 py-3 text-center">
+    <button
+      hx-patch="/admin/produtos/{{ produto.id }}/disponibilidade"
+      hx-target="#produto-{{ produto.id }}"
+      hx-swap="outerHTML"
+      class="px-3 py-1 rounded-full text-xs font-semibold
+        {% if produto.disponivel %}bg-green-100 text-green-700 hover:bg-green-200
+        {% else %}bg-gray-100 text-gray-500 hover:bg-gray-200{% endif %}">
+      {% if produto.disponivel %}Disponível{% else %}Esgotado{% endif %}
+    </button>
+  </td>
+  <td class="px-4 py-3 text-right">
+    <div class="flex gap-2 justify-end">
+      <button
+        hx-get="/admin/produtos/{{ produto.id }}/editar"
+        hx-target="#produto-{{ produto.id }}"
+        hx-swap="outerHTML"
+        class="text-sm text-blue-600 hover:underline font-medium">
+        Editar
+      </button>
+      <button
+        hx-delete="/admin/produtos/{{ produto.id }}"
+        hx-target="#tabela-produtos"
+        hx-swap="outerHTML"
+        hx-confirm="Tem certeza que deseja apagar '{{ produto.nome }}'?"
+        class="text-sm text-red-500 hover:underline font-medium">
+        Apagar
+      </button>
+    </div>
+  </td>
+</tr>

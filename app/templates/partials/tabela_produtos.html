@@ -1,0 +1,19 @@
+<div id="tabela-produtos" class="bg-white rounded-xl shadow overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-gray-50 border-b border-gray-200">
+      <tr>
+        <th class="text-left px-4 py-3 text-gray-600 font-semibold">Nome</th>
+        <th class="text-right px-4 py-3 text-gray-600 font-semibold">Preço</th>
+        <th class="text-center px-4 py-3 text-gray-600 font-semibold">Status</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for produto in produtos %}
+        {% include "partials/produto_linha.html" %}
+      {% else %}
+      <tr><td colspan="4" class="px-4 py-8 text-center text-gray-400">Nenhum produto cadastrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

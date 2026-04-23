@@ -1,0 +1,41 @@
+<div class="bg-white rounded-xl shadow p-6 border border-gray-200">
+  <div class="flex justify-between items-center mb-4">
+    <h3 class="text-lg font-bold text-gray-800">{{ pedido.codigo }}{% if pedido.mesa %} — Mesa {{ pedido.mesa }}{% endif %}</h3>
+    <span class="text-2xl font-bold text-green-600">R$ {{ "%.2f"|format(total) }}</span>
+  </div>
+
+  <ul class="divide-y divide-gray-100 mb-4">
+    {% for item in pedido.itens %}
+    <li class="py-2 flex justify-between text-sm text-gray-700">
+      <span>{{ item.quantidade }}x {{ item.produto.nome }}</span>
+      <span>R$ {{ "%.2f"|format(item.quantidade * item.produto.preco) }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+
+  {% if not pedido.pagamento %}
+  <form hx-post="/caixa/pedido/{{ pedido.id }}/pagar"
+        hx-target="#caixa-resultado"
+        hx-swap="innerHTML"
+        class="space-y-3 border-t border-gray-100 pt-4">
+    <select name="forma" required
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+      <option value="">Forma de pagamento</option>
+      <option value="dinheiro">Dinheiro</option>
+      <option value="pix">PIX</option>
+      <option value="cartao_debito">Cartão de Débito</option>
+      <option value="cartao_credito">Cartão de Crédito</option>
+    </select>
+    <input type="number" name="valor_pago" step="0.01" min="{{ total }}" value="{{ "%.2f"|format(total) }}"
+           class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+    <button type="submit"
+            class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg">
+      Confirmar Pagamento
+    </button>
+  </form>
+  {% else %}
+  <div class="border-t border-gray-100 pt-4 text-center text-green-600 font-semibold">
+    Pedido já pago via {{ pedido.pagamento.forma.value.replace("_", " ").title() }}
+  </div>
+  {% endif %}
+</div>

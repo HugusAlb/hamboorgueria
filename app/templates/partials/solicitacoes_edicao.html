@@ -1,0 +1,97 @@
+{% for sol in solicitacoes %}
+{% set pedido = sol.pedido %}
+{% set itens_antes = sol.itens_antes | fromjson %}
+{% set itens_depois = sol.itens_depois | fromjson %}
+<div class="mb-6 bg-white border-2 border-orange-400 rounded-2xl shadow-lg overflow-hidden">
+
+  <!-- Cabeçalho -->
+  <div class="bg-orange-400 px-5 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">✏️</span>
+      <div>
+        <p class="text-white font-bold text-lg leading-tight">Solicitação de edição</p>
+        <p class="text-orange-100 text-sm">{{ sol.pedido.codigo if sol.pedido else sol.pedido_id }} · Mesa {{ sol.pedido.mesa if sol.pedido else '–' }}</p>
+      </div>
+    </div>
+    <span class="text-orange-100 text-sm">{{ sol.criado_em.strftime('%H:%M') }}</span>
+  </div>
+
+  <!-- Comparação lado a lado -->
+  <div class="grid grid-cols-2 divide-x divide-gray-200">
+
+    <!-- Antes -->
+    <div class="p-4">
+      <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Pedido atual</p>
+      <ul class="space-y-1">
+        {% for item in itens_antes %}
+        <li class="text-sm text-gray-700 flex items-center gap-1">
+          <span class="font-semibold text-gray-500">{{ item.quantidade }}×</span>
+          {{ item.nome }}
+        </li>
+        {% else %}
+        <li class="text-sm text-gray-400 italic">Sem itens</li>
+        {% endfor %}
+      </ul>
+      {% if sol.obs_antes %}
+      <p class="mt-2 text-xs text-gray-400 italic">Obs: {{ sol.obs_antes }}</p>
+      {% endif %}
+    </div>
+
+    <!-- Depois -->
+    <div class="p-4 bg-orange-50">
+      <p class="text-xs font-bold uppercase tracking-widest text-orange-500 mb-2">Novo pedido solicitado</p>
+      <ul class="space-y-1">
+        {% for item in itens_depois %}
+        {% set antes = itens_antes | selectattr('produto_id', 'equalto', item.produto_id) | list %}
+        {% set qtd_antes = antes[0].quantidade if antes else 0 %}
+        <li class="text-sm flex items-center gap-1
+          {% if qtd_antes == 0 %}text-green-700 font-semibold
+          {% elif item.quantidade != qtd_antes %}text-yellow-700
+          {% else %}text-gray-700{% endif %}">
+          <span class="font-semibold">{{ item.quantidade }}×</span>
+          {{ item.nome }}
+          {% if qtd_antes == 0 %}
+            <span class="text-xs bg-green-100 text-green-700 px-1 rounded ml-1">novo</span>
+          {% elif item.quantidade > qtd_antes %}
+            <span class="text-xs bg-yellow-100 text-yellow-700 px-1 rounded ml-1">+{{ item.quantidade - qtd_antes }}</span>
+          {% elif item.quantidade < qtd_antes %}
+            <span class="text-xs bg-red-100 text-red-700 px-1 rounded ml-1">-{{ qtd_antes - item.quantidade }}</span>
+          {% endif %}
+        </li>
+        {% endfor %}
+        <!-- Itens removidos -->
+        {% for item in itens_antes %}
+        {% set depois = itens_depois | selectattr('produto_id', 'equalto', item.produto_id) | list %}
+        {% if not depois %}
+        <li class="text-sm text-red-500 line-through flex items-center gap-1">
+          <span class="font-semibold">{{ item.quantidade }}×</span> {{ item.nome }}
+          <span class="text-xs bg-red-100 text-red-600 px-1 rounded ml-1 no-underline">removido</span>
+        </li>
+        {% endif %}
+        {% endfor %}
+      </ul>
+      {% if sol.obs_depois %}
+      <p class="mt-2 text-xs text-orange-600 italic">Obs: {{ sol.obs_depois }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Botões -->
+  <div class="px-5 py-3 bg-gray-50 flex gap-3 justify-end border-t border-gray-200">
+    <button
+      hx-post="/cozinha/solicitacoes/{{ sol.id }}/rejeitar"
+      hx-target="#solicitacoes-edicao"
+      hx-swap="innerHTML"
+      class="px-4 py-2 rounded-lg bg-red-100 text-red-700 font-semibold hover:bg-red-200 text-sm">
+      Rejeitar
+    </button>
+    <button
+      hx-post="/cozinha/solicitacoes/{{ sol.id }}/aprovar"
+      hx-target="#solicitacoes-edicao"
+      hx-swap="innerHTML"
+      class="px-4 py-2 rounded-lg bg-green-500 text-white font-bold hover:bg-green-600 text-sm">
+      Aprovar edição
+    </button>
+  </div>
+</div>
+{% endfor %}

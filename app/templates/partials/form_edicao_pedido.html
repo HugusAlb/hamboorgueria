@@ -1,0 +1,61 @@
+{% set qtds = {} %}
+{% for item in pedido.itens %}{% set _ = qtds.update({item.produto_id: item.quantidade}) %}{% endfor %}
+
+<div class="bg-white rounded-xl shadow p-5 max-w-lg border border-blue-200">
+  <h3 class="text-lg font-bold text-gray-800 mb-4">✏️ Editar Pedido {{ pedido.codigo }}</h3>
+
+  <form hx-post="/cliente/pedido/{{ pedido.id }}/solicitar-edicao"
+        hx-target="#area-edicao"
+        hx-swap="innerHTML"
+        class="space-y-4">
+
+    <div class="space-y-3">
+      {% for produto in produtos %}
+      <div class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+        <div>
+          <p class="font-semibold text-gray-800">{{ produto.nome }}</p>
+          <p class="text-sm text-green-600">R$ {{ "%.2f"|format(produto.preco) }}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="ajustarQtd('edit-qtd-{{ produto.id }}', -1)"
+                  class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-lg leading-none">−</button>
+          <input type="number" id="edit-qtd-{{ produto.id }}" name="item_{{ produto.id }}"
+                 value="{{ qtds.get(produto.id, 0) }}" min="0"
+                 class="w-12 text-center border border-gray-300 rounded-lg py-1 text-sm font-semibold" readonly />
+          <button type="button" onclick="ajustarQtd('edit-qtd-{{ produto.id }}', 1)"
+                  class="w-8 h-8 rounded-full bg-yellow-400 hover:bg-yellow-500 text-white font-bold text-lg leading-none">+</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold text-gray-600 mb-1">Observação</label>
+      <input type="text" name="observacao" value="{{ pedido.observacao or '' }}"
+             placeholder="Ex: sem cebola"
+             class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+    </div>
+
+    <div class="flex gap-3">
+      <button type="submit"
+              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-sm">
+        Enviar solicitação
+      </button>
+      <button type="button"
+              hx-get="/cliente/pedido/{{ pedido.id }}/editar"
+              hx-target="#area-edicao"
+              hx-swap="innerHTML"
+              onclick="document.getElementById('area-edicao').innerHTML = '<button hx-get=\'/cliente/pedido/{{ pedido.id }}/editar\' hx-target=\'#area-edicao\' hx-swap=\'innerHTML\' class=\'text-sm text-blue-600 hover:underline font-medium\'>✏️ Solicitar edição do pedido</button>'; htmx.process(document.getElementById('area-edicao'));"
+              class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-sm">
+        Cancelar
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  function ajustarQtd(id, delta) {
+    const input = document.getElementById(id);
+    input.value = Math.max(0, parseInt(input.value) + delta);
+  }
+</script>

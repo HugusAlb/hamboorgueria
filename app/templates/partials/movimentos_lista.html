@@ -1,0 +1,32 @@
+<div id="movimentos-lista" class="bg-white rounded-xl shadow overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-gray-50 border-b border-gray-200">
+      <tr>
+        <th class="text-left px-4 py-3 text-gray-600 font-semibold">Data/Hora</th>
+        <th class="text-left px-4 py-3 text-gray-600 font-semibold">Descrição</th>
+        <th class="text-left px-4 py-3 text-gray-600 font-semibold">Tipo</th>
+        <th class="text-right px-4 py-3 text-gray-600 font-semibold">Valor</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for mov in movimentos %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{ mov.registrado_em.strftime('%d/%m/%Y %H:%M') }}</td>
+        <td class="px-4 py-3 text-gray-700">{{ mov.descricao }}</td>
+        <td class="px-4 py-3">
+          <span class="px-2 py-1 rounded-full text-xs font-semibold
+            {% if mov.tipo.value == 'entrada' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+            {{ mov.tipo.value.capitalize() }}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-right font-semibold
+          {% if mov.tipo.value == 'entrada' %}text-green-600{% else %}text-red-600{% endif %}">
+          R$ {{ "%.2f"|format(mov.valor) }}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="px-4 py-8 text-center text-gray-400">Nenhum movimento registrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

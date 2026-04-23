@@ -1,0 +1,26 @@
+<!-- Formulário de novo produto -->
+<div class="bg-white rounded-xl shadow p-6 mb-6 max-w-lg">
+  <h2 class="text-xl font-semibold mb-4 text-gray-700">Novo Produto</h2>
+  <form hx-post="/admin/produtos"
+        hx-target="#tabela-produtos"
+        hx-swap="outerHTML"
+        hx-on::after-request="if(event.detail.successful) this.reset()"
+        class="flex flex-wrap gap-3 items-end">
+    <div class="flex-1 min-w-[160px]">
+      <label class="block text-xs font-semibold text-gray-500 mb-1">Nome</label>
+      <input type="text" name="nome" placeholder="X-Burguer" required
+             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+    </div>
+    <div class="w-32">
+      <label class="block text-xs font-semibold text-gray-500 mb-1">Preço (R$)</label>
+      <input type="number" name="preco" step="0.01" min="0.01" placeholder="0,00" required
+             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+    </div>
+    <button type="submit"
+            class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold px-5 py-2 rounded-lg text-sm">
+      Adicionar
+    </button>
+  </form>
+</div>
+
+{% include "partials/tabela_produtos.html" %}

@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Caixa{% endblock %}
+{% block content %}
+
+<div class="hidden border-l-red-500 border-l-yellow-400 border-l-green-500
+            bg-red-100 text-red-700 bg-yellow-100 text-yellow-700
+            bg-green-100 text-green-700 bg-blue-100 text-blue-700
+            border-orange-200 border-l-orange-400"></div>
+
+<h1 class="text-3xl font-bold mb-6 text-gray-800">Caixa</h1>
+
+<!-- Abas -->
+<div class="flex gap-2 mb-6 border-b border-gray-200 flex-wrap">
+  <button onclick="mostrarAba('aba-pendentes')" id="btn-pendentes"
+          class="px-5 py-2 font-semibold rounded-t-lg border-b-2 border-yellow-500 text-yellow-600 bg-white">
+    Pedidos Pendentes
+  </button>
+  <button onclick="mostrarAba('aba-aceitos')" id="btn-aceitos"
+          class="px-5 py-2 font-semibold rounded-t-lg border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+    Pedidos Aceitos
+  </button>
+  <button onclick="mostrarAba('aba-registrar')" id="btn-registrar"
+          class="px-5 py-2 font-semibold rounded-t-lg border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+    Registrar Pedido
+  </button>
+  <button onclick="mostrarAba('aba-cobrar')" id="btn-cobrar"
+          class="px-5 py-2 font-semibold rounded-t-lg border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+    Cobrar
+  </button>
+</div>
+
+<!-- Aba: Pedidos Pendentes -->
+<div id="aba-pendentes">
+  <div hx-ext="sse" sse-connect="/sse/caixa">
+    <div id="pendentes-lista"
+         hx-get="/api/caixa/pendentes"
+         hx-trigger="sse:update"
+         hx-swap="innerHTML"
+         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% with pedidos=pedidos_pendentes %}
+      {% include "partials/caixa_pendentes.html" %}
+      {% endwith %}
+    </div>
+  </div>
+</div>
+
+<!-- Aba: Pedidos Aceitos -->
+<div id="aba-aceitos" class="hidden">
+  <div hx-ext="sse" sse-connect="/sse/caixa">
+    <div id="aceitos-lista"
+         hx-get="/api/caixa/aceitos"
+         hx-trigger="sse:update"
+         hx-swap="innerHTML"
+         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% with pedidos=pedidos_aceitos %}
+      {% include "partials/caixa_aceitos.html" %}
+      {% endwith %}
+    </div>
+  </div>
+</div>
+
+<!-- Aba: Registrar Pedido -->
+<div id="aba-registrar" class="hidden">
+  <div class="max-w-lg mx-auto">
+    <div id="resultado-registro" class="mb-4"></div>
+    <form hx-post="/caixa/registrar-pedido"
+          hx-target="#resultado-registro"
+          hx-swap="innerHTML"
+          hx-on::after-request="if(event.detail.successful) { limparFormRegistro(this); }"
+          class="bg-white rounded-xl shadow p-6 space-y-5">
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-600 mb-2">Tipo de entrega</label>
+        <div class="flex gap-3">
+          <label class="flex-1 cursor-pointer">
+            <input type="radio" name="tipo_entrega" value="local" checked
+                   onchange="document.getElementById('campo-mesa').classList.remove('hidden')"
+                   class="sr-only peer" />
+            <div class="border-2 border-gray-200 peer-checked:border-yellow-500 peer-checked:bg-yellow-50
+                        rounded-xl p-3 text-center text-sm font-semibold text-gray-600 peer-checked:text-yellow-700">
+              🍽️ Local
+            </div>
+          </label>
+          <label class="flex-1 cursor-pointer">
+            <input type="radio" name="tipo_entrega" value="retirar"
+                   onchange="document.getElementById('campo-mesa').classList.add('hidden')"
+                   class="sr-only peer" />
+            <div class="border-2 border-gray-200 peer-checked:border-yellow-500 peer-checked:bg-yellow-50
+                        rounded-xl p-3 text-center text-sm font-semibold text-gray-600 peer-checked:text-yellow-700">
+              🥡 Retirada
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div id="campo-mesa">
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Mesa</label>
+        <input type="number" name="mesa" min="1" placeholder="Nº da mesa"
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-600 mb-3">Itens</label>
+        <div class="space-y-2">
+          {% for produto in produtos %}
+          <div class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+            <div>
+              <p class="font-semibold text-sm text-gray-800">{{ produto.nome }}</p>
+              <p class="text-xs text-green-600">R$ {{ "%.2f"|format(produto.preco) }}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="ajustarQtdCaixa('cqtd-{{ produto.id }}', -1)"
+                      class="w-7 h-7 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-base leading-none">−</button>
+              <input type="number" id="cqtd-{{ produto.id }}" name="item_{{ produto.id }}"
+                     value="0" min="0"
+                     class="w-10 text-center border border-gray-300 rounded py-1 text-sm font-semibold" readonly />
+              <button type="button" onclick="ajustarQtdCaixa('cqtd-{{ produto.id }}', 1)"
+                      class="w-7 h-7 rounded-full bg-yellow-400 hover:bg-yellow-500 text-white font-bold text-base leading-none">+</button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Observação (opcional)</label>
+        <input type="text" name="observacao" placeholder="Ex: sem cebola"
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+      </div>
+
+      <button type="submit"
+              class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-xl">
+        Enviar para a Cozinha
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Aba: Cobrar -->
+<div id="aba-cobrar" class="hidden">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div class="bg-white rounded-xl shadow p-6">
+      <h2 class="text-xl font-semibold mb-4 text-gray-700">Buscar Pedido</h2>
+      <form hx-get="/api/caixa/pedido"
+            hx-target="#caixa-resultado"
+            hx-swap="innerHTML"
+            class="flex gap-3">
+        <input type="text" name="codigo" placeholder="Código do pedido" maxlength="6"
+               class="border border-gray-300 rounded-lg px-4 py-2 flex-1 focus:outline-none focus:ring-2 focus:ring-yellow-400 uppercase" required />
+        <button type="submit"
+                class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-5 py-2 rounded-lg">
+          Ver Total
+        </button>
+      </form>
+    </div>
+    <div id="caixa-resultado" class="space-y-4"></div>
+  </div>
+</div>
+
+<script>
+  const _abas = ['aba-pendentes', 'aba-aceitos', 'aba-registrar', 'aba-cobrar'];
+
+  function mostrarAba(id) {
+    _abas.forEach(a => document.getElementById(a).classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+    _abas.forEach(a => {
+      document.getElementById(a.replace('aba-', 'btn-')).className =
+        'px-5 py-2 font-semibold rounded-t-lg border-b-2 border-transparent text-gray-500 hover:text-gray-700';
+    });
+    document.getElementById(id.replace('aba-', 'btn-')).className =
+      'px-5 py-2 font-semibold rounded-t-lg border-b-2 border-yellow-500 text-yellow-600 bg-white';
+  }
+
+  function ajustarQtdCaixa(id, delta) {
+    const el = document.getElementById(id);
+    el.value = Math.max(0, parseInt(el.value) + delta);
+  }
+
+  function limparFormRegistro(form) {
+    form.querySelectorAll('[id^="cqtd-"]').forEach(el => el.value = 0);
+    form.querySelector('[name="observacao"]').value = '';
+    const mesaEl = form.querySelector('[name="mesa"]');
+    if (mesaEl) mesaEl.value = '';
+  }
+</script>
+
+{% endblock %}

@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% block title %}Cliente{% endblock %}
+{% block content %}
+
+{% if not cliente %}
+<!-- ── Registro / Login ─────────────────────────────────────────────── -->
+<div class="max-w-sm mx-auto mt-10">
+  <h1 class="text-3xl font-bold mb-2 text-gray-800 text-center">Bem-vindo!</h1>
+  <p class="text-gray-500 text-center mb-6">Faça login ou crie seu cadastro para pedir.</p>
+
+  <!-- Abas -->
+  <div class="flex rounded-xl overflow-hidden border border-gray-200 mb-6">
+    <button onclick="mostrarAbaCliente('aba-entrar')" id="btn-entrar"
+            class="flex-1 py-2 text-sm font-semibold bg-yellow-500 text-white">
+      Entrar
+    </button>
+    <button onclick="mostrarAbaCliente('aba-cadastrar')" id="btn-cadastrar"
+            class="flex-1 py-2 text-sm font-semibold bg-white text-gray-500 hover:bg-gray-50">
+      Cadastrar
+    </button>
+  </div>
+
+  <!-- Aba: Entrar -->
+  <div id="aba-entrar" class="bg-white rounded-2xl shadow p-6">
+    {% if erro_entrar %}
+    <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
+      {{ erro_entrar }}
+    </div>
+    {% endif %}
+    <form method="post" action="/cliente/entrar" class="space-y-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Telefone</label>
+        <input type="tel" name="telefone" placeholder="Ex: 11999990000" required autofocus
+               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Senha</label>
+        <input type="password" name="senha" placeholder="••••••••"
+               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+      </div>
+      <button type="submit"
+              class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-xl text-lg">
+        Entrar
+      </button>
+    </form>
+  </div>
+
+  <!-- Aba: Cadastrar -->
+  <div id="aba-cadastrar" class="bg-white rounded-2xl shadow p-6 hidden">
+    {% if erro_cadastrar %}
+    <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
+      {{ erro_cadastrar }}
+    </div>
+    {% endif %}
+    <form method="post" action="/cliente/registrar" class="space-y-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Nome</label>
+        <input type="text" name="nome" placeholder="Ex: João" required
+               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Telefone</label>
+        <input type="tel" name="telefone" placeholder="Ex: 11999990000" required
+               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Senha</label>
+        <input type="password" name="senha" placeholder="••••••••" required
+               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+      </div>
+      <button type="submit"
+              class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-xl text-lg">
+        Criar cadastro
+      </button>
+    </form>
+  </div>
+
+  <script>
+    function mostrarAbaCliente(id) {
+      ['aba-entrar', 'aba-cadastrar'].forEach(a => document.getElementById(a).classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+      document.getElementById('btn-entrar').className =
+        'flex-1 py-2 text-sm font-semibold ' + (id === 'aba-entrar' ? 'bg-yellow-500 text-white' : 'bg-white text-gray-500 hover:bg-gray-50');
+      document.getElementById('btn-cadastrar').className =
+        'flex-1 py-2 text-sm font-semibold ' + (id === 'aba-cadastrar' ? 'bg-yellow-500 text-white' : 'bg-white text-gray-500 hover:bg-gray-50');
+    }
+    {% if erro_entrar %}mostrarAbaCliente('aba-entrar');{% endif %}
+    {% if erro_cadastrar %}mostrarAbaCliente('aba-cadastrar');{% endif %}
+  </script>
+</div>
+
+{% elif pedido_ativo %}
+<!-- ── Pedido em andamento ─────────────────────────────────────────── -->
+<div class="flex justify-between items-center mb-6">
+  <h1 class="text-3xl font-bold text-gray-800">Olá, {{ cliente.nome }}!</h1>
+  <a href="/cliente/sair" class="text-sm text-gray-500 hover:text-red-500 hover:underline">Sair</a>
+</div>
+
+<div class="max-w-lg">
+  {% if solicitacao %}
+  <!-- Edição aguardando aprovação -->
+  {% include "partials/edicao_aguardando.html" %}
+  {% else %}
+  <!-- Status do pedido com SSE -->
+  <div hx-ext="sse" sse-connect="/sse/pedido">
+    {% with pedido=pedido_ativo %}
+    {% include "partials/status_pedido.html" %}
+    {% endwith %}
+  </div>
+
+  {% if pedido_ativo.status.value in ['aguardando', 'preparando'] %}
+  <div id="area-edicao" class="mt-4">
+    <button
+      hx-get="/cliente/pedido/{{ pedido_ativo.id }}/editar"
+      hx-target="#area-edicao"
+      hx-swap="innerHTML"
+      class="text-sm text-blue-600 hover:underline font-medium">
+      ✏️ Solicitar edição do pedido
+    </button>
+  </div>
+  {% endif %}
+  {% endif %}
+</div>
+
+{% else %}
+<!-- ── Menu: novo pedido ───────────────────────────────────────────── -->
+<div class="flex justify-between items-center mb-6">
+  <h1 class="text-3xl font-bold text-gray-800">Olá, {{ cliente.nome }}!</h1>
+  <a href="/cliente/sair" class="text-sm text-gray-500 hover:text-red-500 hover:underline">Sair</a>
+</div>
+
+<div class="max-w-lg mx-auto">
+  <form id="form-pedido"
+        hx-post="/cliente/pedido"
+        hx-target="#resultado-pedido"
+        hx-swap="innerHTML"
+        hx-on::after-request="if(event.detail.successful) this.reset()"
+        class="space-y-6">
+
+    <div>
+      <label class="block text-sm font-semibold text-gray-600 mb-2">Como vai querer?</label>
+      <div class="flex gap-3">
+        <label class="flex-1 cursor-pointer">
+          <input type="radio" name="tipo_entrega" value="local" checked class="sr-only peer" />
+          <div class="border-2 border-gray-200 peer-checked:border-yellow-500 peer-checked:bg-yellow-50
+                      rounded-xl p-4 text-center transition font-semibold text-gray-600 peer-checked:text-yellow-700">
+            🍽️ Comer no local
+          </div>
+        </label>
+        <label class="flex-1 cursor-pointer">
+          <input type="radio" name="tipo_entrega" value="retirar" class="sr-only peer" />
+          <div class="border-2 border-gray-200 peer-checked:border-yellow-500 peer-checked:bg-yellow-50
+                      rounded-xl p-4 text-center transition font-semibold text-gray-600 peer-checked:text-yellow-700">
+            🥡 Retirar
+          </div>
+        </label>
+      </div>
+      <p class="text-xs text-gray-400 mt-2">A mesa será atribuída pelo caixa.</p>
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold text-gray-600 mb-3">Cardápio</label>
+      <div class="space-y-3">
+        {% for produto in produtos %}
+        <div class="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
+          <div>
+            <p class="font-semibold text-gray-800">{{ produto.nome }}</p>
+            <p class="text-sm text-green-600 font-medium">R$ {{ "%.2f"|format(produto.preco) }}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="ajustarQtd('qtd-{{ produto.id }}', -1)"
+                    class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-lg leading-none">−</button>
+            <input type="number" id="qtd-{{ produto.id }}" name="item_{{ produto.id }}"
+                   value="0" min="0"
+                   class="w-12 text-center border border-gray-300 rounded-lg py-1 text-sm font-semibold" readonly />
+            <button type="button" onclick="ajustarQtd('qtd-{{ produto.id }}', 1)"
+                    class="w-8 h-8 rounded-full bg-yellow-400 hover:bg-yellow-500 text-white font-bold text-lg leading-none">+</button>
+          </div>
+        </div>
+        {% else %}
+        <p class="text-gray-400 italic">Nenhum produto disponível no momento.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold text-gray-600 mb-1">Observação (opcional)</label>
+      <input type="text" name="observacao" placeholder="Ex: sem cebola"
+             class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+    </div>
+
+    <button type="submit"
+            class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-xl text-lg">
+      Confirmar Pedido
+    </button>
+  </form>
+
+  <div id="resultado-pedido" class="mt-6"></div>
+
+  <!-- Histórico de pedidos -->
+  {% if historico %}
+  <div class="mt-10">
+    <h2 class="text-lg font-bold text-gray-700 mb-4">Pedidos anteriores</h2>
+    <div class="space-y-3">
+      {% for p in historico %}
+      <div class="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm flex items-center justify-between gap-4">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="font-semibold text-gray-700 text-sm">{{ p.codigo }}</span>
+            <span class="text-xs text-gray-400">{{ p.criado_em.strftime('%d/%m/%Y') }}</span>
+            <span class="px-2 py-0.5 rounded-full text-xs font-semibold
+              {% if p.status.value == 'entregue' %}bg-green-100 text-green-700
+              {% else %}bg-gray-100 text-gray-500{% endif %}">
+              {{ p.status.value.capitalize() }}
+            </span>
+          </div>
+          <p class="text-sm text-gray-600 truncate">
+            {% for item in p.itens %}{{ item.quantidade }}× {{ item.produto.nome }}{% if not loop.last %}, {% endif %}{% endfor %}
+          </p>
+        </div>
+        {% if p.status.value == 'entregue' %}
+        <button type="button"
+                data-itens="[{% for item in p.itens %}[{{ item.produto_id }},{{ item.quantidade }}]{% if not loop.last %},{% endif %}{% endfor %}]"
+                onclick="pedirNovamente(JSON.parse(this.dataset.itens))"
+                class="shrink-0 bg-yellow-400 hover:bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded-lg whitespace-nowrap">
+          Pedir novamente
+        </button>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  function ajustarQtd(id, delta) {
+    const input = document.getElementById(id);
+    input.value = Math.max(0, parseInt(input.value) + delta);
+  }
+
+  function pedirNovamente(itens) {
+    document.querySelectorAll('[id^="qtd-"]').forEach(el => el.value = 0);
+    itens.forEach(([pid, qtd]) => {
+      const el = document.getElementById('qtd-' + pid);
+      if (el) el.value = qtd;
+    });
+    document.getElementById('form-pedido').scrollIntoView({ behavior: 'smooth' });
+  }
+</script>
+{% endif %}
+
+{% endblock %}

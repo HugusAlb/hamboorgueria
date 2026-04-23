@@ -1,0 +1,62 @@
+{% set cores = {
+  'pendente':   'bg-orange-100 text-orange-700 border-orange-300',
+  'aguardando': 'bg-red-100 text-red-700 border-red-300',
+  'preparando':  'bg-yellow-100 text-yellow-700 border-yellow-300',
+  'pronto':      'bg-green-100 text-green-700 border-green-300',
+  'entregue':    'bg-blue-100 text-blue-700 border-blue-300',
+  'cancelado':   'bg-gray-100 text-gray-600 border-gray-300',
+} %}
+{% set rotulos = {
+  'pendente':   'Aguardando confirmação',
+  'aguardando': 'Aguardando preparo',
+  'preparando': 'Em preparo',
+  'pronto':     'Pronto!',
+  'entregue':   'Entregue',
+  'cancelado':  'Cancelado',
+} %}
+
+<!-- Este div se auto-atualiza a cada 10s via HTMX -->
+<div hx-get="/api/cliente/pedido?pedido_id={{ pedido.id }}"
+     hx-trigger="sse:update"
+     hx-swap="outerHTML"
+     class="bg-white rounded-xl shadow p-6 max-w-md border border-gray-200">
+
+  <div class="flex justify-between items-start mb-4">
+    <div>
+      <p class="text-sm text-gray-500">Pedido</p>
+      <p class="text-2xl font-bold text-gray-800">{{ pedido.codigo }}</p>
+    </div>
+    <div>
+      {% if pedido.tipo_entrega.value == 'retirar' %}
+      <p class="text-sm text-gray-500">Entrega</p>
+      <p class="text-lg font-semibold text-gray-700">Retirada</p>
+      {% elif pedido.mesa %}
+      <p class="text-sm text-gray-500">Mesa</p>
+      <p class="text-xl font-semibold text-gray-700">{{ pedido.mesa }}</p>
+      {% else %}
+      <p class="text-sm text-gray-500">Mesa</p>
+      <p class="text-sm text-gray-400 italic">a confirmar</p>
+      {% endif %}
+    </div>
+    <span class="px-3 py-1 rounded-full border text-sm font-semibold {{ cores[pedido.status.value] }}">
+      {{ rotulos[pedido.status.value] }}
+    </span>
+  </div>
+
+  <ul class="divide-y divide-gray-100 mb-4">
+    {% for item in pedido.itens %}
+    <li class="py-2 text-sm text-gray-700">
+      <span class="font-semibold">{{ item.quantidade }}×</span> {{ item.produto.nome }}
+      {% if item.observacao %}<span class="text-gray-400"> — {{ item.observacao }}</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+
+  {% if sol_rejeitada %}
+  <div class="mb-3 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-700">
+    ⚠️ Sua solicitação de edição foi rejeitada pela cozinha.
+  </div>
+  {% endif %}
+
+  <p class="text-xs text-gray-400">Atualização em tempo real</p>
+</div>

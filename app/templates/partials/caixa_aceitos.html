@@ -1,0 +1,56 @@
+{% set cores = {
+  'aguardando': 'border-l-red-500',
+  'preparando': 'border-l-yellow-400',
+  'pronto':     'border-l-green-500',
+} %}
+{% set badges = {
+  'aguardando': 'bg-red-100 text-red-700',
+  'preparando': 'bg-yellow-100 text-yellow-700',
+  'pronto':     'bg-green-100 text-green-700',
+} %}
+{% set rotulos = {
+  'aguardando': 'Aguardando preparo',
+  'preparando': 'Em preparo',
+  'pronto':     'Pronto!',
+} %}
+
+{% for p in pedidos %}
+<div class="bg-white rounded-xl shadow p-4 border-l-4 {{ cores[p.status.value] }}">
+  <div class="flex justify-between items-center mb-2">
+    <div>
+      <span class="text-lg font-bold text-gray-800">{{ p.codigo }}</span>
+      {% if p.tipo_entrega.value == 'retirar' %}
+      <span class="ml-2 text-xs text-blue-600 font-semibold">🥡 Retirada</span>
+      {% else %}
+      <span class="ml-2 text-xs text-gray-500">Mesa {{ p.mesa }}</span>
+      {% endif %}
+    </div>
+    <span class="px-2 py-0.5 rounded-full text-xs font-semibold {{ badges[p.status.value] }}">
+      {{ rotulos[p.status.value] }}
+    </span>
+  </div>
+
+  <ul class="mb-3 space-y-1">
+    {% for item in p.itens %}
+    <li class="text-sm text-gray-700">
+      <span class="font-semibold">{{ item.quantidade }}×</span> {{ item.produto.nome }}
+    </li>
+    {% endfor %}
+  </ul>
+
+  {% if p.status.value == 'pronto' %}
+  <div class="pt-2 border-t border-gray-100">
+    <button
+       hx-get="/api/caixa/pedido?codigo={{ p.codigo }}"
+       hx-target="#caixa-resultado"
+       hx-swap="innerHTML"
+       onclick="mostrarAba('aba-cobrar')"
+       class="block text-center w-full bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-semibold py-1.5 rounded-lg">
+      Cobrar
+    </button>
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<p class="text-gray-400 text-center py-10 col-span-full">Nenhum pedido aceito no momento.</p>
+{% endfor %}

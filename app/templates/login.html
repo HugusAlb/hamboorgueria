@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — Hamboorgueria</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center font-sans">
+
+  <div class="w-full max-w-sm">
+    <div class="text-center mb-8">
+      <span class="text-4xl">🍔</span>
+      <h1 class="text-2xl font-bold text-gray-800 mt-2">Hamboorgueria</h1>
+      <p class="text-gray-500 text-sm mt-1">Acesso restrito a funcionários</p>
+    </div>
+
+    <form method="post" action="/login" class="bg-white rounded-2xl shadow p-6 space-y-4">
+      <input type="hidden" name="next" value="{{ next }}" />
+
+      {% if erro %}
+      <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+        {{ erro }}
+      </div>
+      {% endif %}
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Login</label>
+        <input type="text" name="login" autofocus required
+               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Senha</label>
+        <input type="password" name="senha" required
+               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+      </div>
+      <button type="submit"
+              class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-xl text-lg">
+        Entrar
+      </button>
+    </form>
+
+    <p class="text-center mt-6 text-sm text-gray-500">
+      É cliente?
+      <a href="/cliente" class="text-yellow-600 font-semibold hover:underline">Faça seu pedido aqui</a>
+    </p>
+  </div>
+
+</body>
+</html>

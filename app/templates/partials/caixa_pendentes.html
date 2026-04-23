@@ -1,0 +1,61 @@
+{% for p in pedidos %}
+<div class="bg-white rounded-xl shadow p-4 border border-orange-200 border-l-4 border-l-orange-400">
+  <div class="flex justify-between items-center mb-2">
+    <span class="text-lg font-bold text-gray-800">{{ p.codigo }}</span>
+    <span class="px-2 py-0.5 rounded-full text-xs font-semibold
+      {% if p.tipo_entrega.value == 'retirar' %}bg-blue-100 text-blue-700{% else %}bg-yellow-100 text-yellow-700{% endif %}">
+      {% if p.tipo_entrega.value == 'retirar' %}🥡 Retirada{% else %}🍽️ Local{% endif %}
+    </span>
+  </div>
+
+  <ul class="mb-3 space-y-1">
+    {% for item in p.itens %}
+    <li class="text-sm text-gray-700">
+      <span class="font-semibold">{{ item.quantidade }}×</span> {{ item.produto.nome }}
+    </li>
+    {% endfor %}
+  </ul>
+
+  {% if p.observacao %}
+  <p class="text-xs text-gray-500 italic mb-3">Obs: {{ p.observacao }}</p>
+  {% endif %}
+
+  <div class="flex gap-2 items-end pt-2 border-t border-gray-100">
+    {% if p.tipo_entrega.value == 'local' %}
+    <form hx-post="/caixa/pedido/{{ p.id }}/aprovar"
+          hx-target="#pendentes-lista"
+          hx-swap="innerHTML"
+          class="flex gap-2 flex-1 items-end">
+      <div class="flex-1">
+        <label class="block text-xs text-gray-500 mb-1">Mesa</label>
+        <input type="number" name="mesa" min="1" required placeholder="Nº"
+               class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+      </div>
+      <button type="submit"
+              class="bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-4 py-1.5 rounded-lg">
+        Aceitar
+      </button>
+    </form>
+    {% else %}
+    <button type="button"
+            hx-post="/caixa/pedido/{{ p.id }}/aprovar"
+            hx-target="#pendentes-lista"
+            hx-swap="innerHTML"
+            class="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-4 py-1.5 rounded-lg">
+      Aceitar retirada
+    </button>
+    {% endif %}
+
+    <form hx-post="/caixa/pedido/{{ p.id }}/rejeitar"
+          hx-target="#pendentes-lista"
+          hx-swap="innerHTML">
+      <button type="submit"
+              class="bg-red-100 hover:bg-red-200 text-red-700 text-sm font-semibold px-4 py-1.5 rounded-lg">
+        Recusar
+      </button>
+    </form>
+  </div>
+</div>
+{% else %}
+<p class="text-gray-400 text-center py-10 col-span-full">Nenhum pedido aguardando confirmação.</p>
+{% endfor %}

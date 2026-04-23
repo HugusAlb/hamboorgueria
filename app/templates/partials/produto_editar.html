@@ -1,0 +1,38 @@
+<tr id="produto-{{ produto.id }}" class="bg-yellow-50">
+  <td class="px-3 py-2">
+    <input type="text" name="nome" value="{{ produto.nome }}" form="form-editar-{{ produto.id }}"
+           class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400" required />
+  </td>
+  <td class="px-3 py-2">
+    <input type="number" name="preco" value="{{ '%.2f'|format(produto.preco) }}"
+           step="0.01" min="0.01" form="form-editar-{{ produto.id }}"
+           class="w-24 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 ml-auto block" required />
+  </td>
+  <td class="px-3 py-2 text-center">
+    <select name="disponivel" form="form-editar-{{ produto.id }}"
+            class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+      <option value="true" {% if produto.disponivel %}selected{% endif %}>Disponível</option>
+      <option value="false" {% if not produto.disponivel %}selected{% endif %}>Esgotado</option>
+    </select>
+  </td>
+  <td class="px-3 py-2 text-right">
+    <div class="flex gap-2 justify-end">
+      <form id="form-editar-{{ produto.id }}"
+            hx-patch="/admin/produtos/{{ produto.id }}"
+            hx-target="#produto-{{ produto.id }}"
+            hx-swap="outerHTML">
+        <button type="submit"
+                class="text-sm text-green-600 hover:underline font-semibold">
+          Salvar
+        </button>
+      </form>
+      <button
+        hx-get="/admin/produtos/{{ produto.id }}/cancelar"
+        hx-target="#produto-{{ produto.id }}"
+        hx-swap="outerHTML"
+        class="text-sm text-gray-500 hover:underline">
+        Cancelar
+      </button>
+    </div>
+  </td>
+</tr>

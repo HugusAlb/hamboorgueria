@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Hamboorgueria{% endblock %}</title>
+  <script>
+    tailwind.config = { darkMode: 'class' }
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <script>
+    // Aplica tema antes do render para evitar flash
+    if (localStorage.getItem('tema') === 'escuro') {
+      document.documentElement.classList.add('dark');
+    }
+  </script>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans">
+
+  <nav class="bg-yellow-500 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap gap-4 items-center justify-between">
+      <span class="text-2xl font-bold text-white">🍔 Hamboorgueria</span>
+      <div class="flex gap-3 flex-wrap items-center">
+        {% if usuario %}
+          {% if usuario.perfil in ['cozinha', 'auditoria'] %}
+          <a href="/cozinha"   class="text-white font-semibold hover:underline">Cozinha</a>
+          {% endif %}
+          {% if usuario.perfil in ['caixa', 'auditoria'] %}
+          <a href="/caixa"     class="text-white font-semibold hover:underline">Caixa</a>
+          {% endif %}
+          {% if usuario.perfil == 'auditoria' %}
+          <a href="/auditoria" class="text-white font-semibold hover:underline">Auditoria</a>
+          {% endif %}
+          <span class="text-white/70 text-sm border-l border-white/30 pl-3">{{ usuario.login }}</span>
+          <a href="/logout" class="bg-white/20 hover:bg-white/30 text-white text-sm font-semibold px-3 py-1 rounded-full">Sair</a>
+        {% else %}
+          <a href="/cliente" class="text-white font-semibold hover:underline">Cliente</a>
+        {% endif %}
+        <button onclick="alternarTema()"
+                id="btn-tema"
+                class="ml-2 bg-white/20 hover:bg-white/30 text-white font-bold px-3 py-1 rounded-full text-sm transition">
+          🌙
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-4 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script>
+    function alternarTema() {
+      const html = document.documentElement;
+      const escuro = html.classList.toggle('dark');
+      localStorage.setItem('tema', escuro ? 'escuro' : 'claro');
+      document.getElementById('btn-tema').textContent = escuro ? '☀️' : '🌙';
+    }
+
+    // Ícone inicial correto
+    if (localStorage.getItem('tema') === 'escuro') {
+      document.getElementById('btn-tema').textContent = '☀️';
+    }
+
+    // Reprocessa classes Tailwind após qualquer swap do HTMX
+    document.addEventListener('htmx:afterSwap', () => {
+      if (typeof tailwind !== 'undefined') tailwind.refresh();
+    });
+  </script>
+</body>
+</html>

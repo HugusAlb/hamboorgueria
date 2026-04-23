@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Auditoria{% endblock %}
+{% block content %}
+
+<h1 class="text-3xl font-bold mb-6 text-gray-800">Auditoria</h1>
+
+<!-- Abas -->
+<div class="flex gap-2 mb-6 border-b border-gray-200">
+  <button onclick="mostrarAba('aba-financeiro')" id="btn-financeiro"
+          class="px-5 py-2 font-semibold rounded-t-lg border-b-2 border-yellow-500 text-yellow-600 bg-white">
+    Financeiro
+  </button>
+  <button onclick="mostrarAba('aba-cardapio')" id="btn-cardapio"
+          class="px-5 py-2 font-semibold rounded-t-lg border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+    Cardápio
+  </button>
+</div>
+
+<!-- Aba Financeiro -->
+<div id="aba-financeiro">
+
+  <div hx-ext="sse" sse-connect="/sse/auditoria">
+    {% include "partials/auditoria_resumo.html" %}
+  </div>
+
+  <div class="bg-white rounded-xl shadow p-6 mb-8 max-w-md">
+    <h2 class="text-xl font-semibold mb-4 text-gray-700">Registrar Saída</h2>
+    <form hx-post="/auditoria/movimentos"
+          hx-target="#movimentos-lista"
+          hx-swap="outerHTML"
+          hx-on::after-request="if(event.detail.successful) this.reset()"
+          class="space-y-3">
+      <input type="hidden" name="tipo" value="saida" />
+      <input type="text" name="descricao" placeholder="Descrição (ex: fornecedor de pão)"
+             class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" required />
+      <input type="number" name="valor" step="0.01" min="0.01" placeholder="Valor (R$)"
+             class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" required />
+      <button type="submit" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded-lg">
+        Registrar
+      </button>
+    </form>
+  </div>
+
+  {% include "partials/movimentos_lista.html" %}
+</div>
+
+<!-- Aba Cardápio -->
+<div id="aba-cardapio" class="hidden">
+  {% include "partials/produtos_admin.html" %}
+</div>
+
+<script>
+  function mostrarAba(id) {
+    ['aba-financeiro', 'aba-cardapio'].forEach(a => document.getElementById(a).classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+    ['btn-financeiro', 'btn-cardapio'].forEach(b => {
+      document.getElementById(b).className =
+        'px-5 py-2 font-semibold rounded-t-lg border-b-2 border-transparent text-gray-500 hover:text-gray-700';
+    });
+    const btnId = id.replace('aba-', 'btn-');
+    document.getElementById(btnId).className =
+      'px-5 py-2 font-semibold rounded-t-lg border-b-2 border-yellow-500 text-yellow-600 bg-white';
+  }
+</script>
+
+{% endblock %}

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo — Hamboorgueria</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body { height: 100%; margin: 0; overflow: hidden; }
+    iframe { width: 100%; height: 100%; border: none; background: #fff; }
+  </style>
+</head>
+<body class="bg-gray-950 h-screen flex flex-col">
+
+  <!-- Cabeçalho -->
+  <div class="bg-gray-900 border-b border-gray-800 px-4 py-2 flex items-center justify-between shrink-0">
+    <span class="text-white font-bold text-lg">🍔 Hamboorgueria — Demo</span>
+    <span class="text-gray-400 text-xs">Todas as telas em tempo real</span>
+  </div>
+
+  <!-- Grid de painéis -->
+  <div class="grid grid-cols-2 grid-rows-2 gap-2 p-2 flex-1 min-h-0">
+
+    <!-- Caixa -->
+    <div class="flex flex-col rounded-xl overflow-hidden border border-gray-700 shadow-lg">
+      <div class="bg-gray-800 text-white text-xs font-bold px-3 py-1.5 flex items-center gap-2 shrink-0">
+        <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+        Caixa
+      </div>
+      <iframe src="/demo/caixa" title="Caixa"></iframe>
+    </div>
+
+    <!-- Cozinha -->
+    <div class="flex flex-col rounded-xl overflow-hidden border border-gray-700 shadow-lg">
+      <div class="bg-gray-800 text-white text-xs font-bold px-3 py-1.5 flex items-center gap-2 shrink-0">
+        <span class="w-2 h-2 rounded-full bg-orange-400"></span>
+        Cozinha
+      </div>
+      <iframe src="/demo/cozinha" title="Cozinha"></iframe>
+    </div>
+
+    <!-- Cliente -->
+    <div class="flex flex-col rounded-xl overflow-hidden border border-gray-700 shadow-lg">
+      <div class="bg-gray-800 text-white text-xs font-bold px-3 py-1.5 flex items-center gap-2 shrink-0">
+        <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+        Cliente
+      </div>
+      <iframe src="/demo/cliente" title="Cliente"></iframe>
+    </div>
+
+    <!-- Auditoria -->
+    <div class="flex flex-col rounded-xl overflow-hidden border border-gray-700 shadow-lg">
+      <div class="bg-gray-800 text-white text-xs font-bold px-3 py-1.5 flex items-center gap-2 shrink-0">
+        <span class="w-2 h-2 rounded-full bg-green-400"></span>
+        Auditoria
+      </div>
+      <iframe src="/demo/auditoria" title="Auditoria"></iframe>
+    </div>
+
+  </div>
+</body>
+</html>

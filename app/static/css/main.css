@@ -1,0 +1,58 @@
+/* Transição suave ao trocar tema */
+*, *::before, *::after {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
+}
+
+/* ── Modo Noturno ─────────────────────────────────────── */
+.dark body                       { background-color: #0f1523 !important; }
+.dark .bg-gray-100               { background-color: #0f1523 !important; }
+.dark .bg-white                  { background-color: #1e2a3a !important; }
+.dark .bg-gray-50                { background-color: #172030 !important; }
+.dark .bg-gray-100.min-h-screen  { background-color: #0f1523 !important; }
+
+/* Textos */
+.dark .text-gray-800,
+.dark .text-gray-900             { color: #e2e8f0 !important; }
+.dark .text-gray-700             { color: #cbd5e1 !important; }
+.dark .text-gray-600             { color: #94a3b8 !important; }
+.dark .text-gray-500             { color: #64748b !important; }
+.dark .text-gray-400             { color: #475569 !important; }
+
+/* Bordas */
+.dark .border-gray-200,
+.dark .border-gray-100           { border-color: #2d3f55 !important; }
+.dark .border-gray-300           { border-color: #3d5269 !important; }
+
+/* Tabelas */
+.dark .divide-gray-100 > * + *   { border-color: #2d3f55 !important; }
+.dark .hover\:bg-gray-50:hover   { background-color: #1e2a3a !important; }
+
+/* Inputs e selects */
+.dark input:not([type="number"][readonly]),
+.dark select,
+.dark textarea {
+  background-color: #253347 !important;
+  color: #e2e8f0 !important;
+  border-color: #3d5269 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder      { color: #64748b !important; }
+
+/* Nav */
+.dark nav                        { background-color: #b45309 !important; }
+
+/* Sombras */
+.dark .shadow,
+.dark .shadow-md,
+.dark .shadow-sm                 { box-shadow: 0 1px 4px 0 rgba(0,0,0,0.5) !important; }
+
+/* Cards coloridos (status, finanças) - ajuste de luminosidade */
+.dark .bg-green-50  { background-color: #0d2a1a !important; }
+.dark .bg-red-50    { background-color: #2a0d0d !important; }
+.dark .bg-blue-50   { background-color: #0d1a2a !important; }
+.dark .bg-yellow-50 { background-color: #2a200d !important; }
+.dark .bg-teal-50   { background-color: #0d2222 !important; }
+.dark .bg-purple-50 { background-color: #1a0d2a !important; }
+
+/* Aba ativa e fundo de linha */
+.dark .bg-yellow-50.border { background-color: #2a1d08 !important; }
