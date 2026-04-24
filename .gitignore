@@ -24,3 +24,4 @@ htmlcov/
 dist/
 build/
 poetry.lock
+pyproject.toml
