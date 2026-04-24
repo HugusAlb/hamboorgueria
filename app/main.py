@@ -1,17 +1,23 @@
 import asyncio
 import json
+import os
 import secrets
+
+from dotenv import load_dotenv
+load_dotenv()
 from collections import defaultdict
 from contextlib import asynccontextmanager
+from time import monotonic
 from types import SimpleNamespace
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 
-from app.database import create_db, get_session, seed_cliente_demo, seed_usuarios
+from app.database import create_db, engine, get_session, seed_cliente_demo, seed_usuarios
 from app.models import (
     Cliente, FormaPagamento, ItemPedido, Movimento,
     Pagamento, Pedido, Produto,
@@ -19,6 +25,21 @@ from app.models import (
     Usuario, gerar_codigo_pedido, hash_senha, verificar_senha,
 )
 from app.routers import auditoria, caixa, pedidos, produtos
+
+_HTTPS = os.getenv("HTTPS", "false").lower() == "true"
+_DEMO_ENABLED = os.getenv("DEMO_ENABLED", "false").lower() == "true"
+
+_ratelimit: dict[str, list[float]] = defaultdict(list)
+
+
+def _rate_limit_ok(key: str, max_calls: int = 10, window: float = 60.0) -> bool:
+    now = monotonic()
+    hits = [t for t in _ratelimit[key] if now - t < window]
+    _ratelimit[key] = hits
+    if len(hits) >= max_calls:
+        return False
+    _ratelimit[key].append(now)
+    return True
 
 
 # ── SSE broadcaster ──────────────────────────────────────────────────────────
@@ -51,6 +72,8 @@ class _Broadcaster:
 _sse = _Broadcaster()
 
 
+
+
 @asynccontextmanager
 async def lifespan(app):
     create_db()
@@ -60,6 +83,20 @@ async def lifespan(app):
 
 app = FastAPI(title="Hamboorgueria", lifespan=lifespan)
 templates = Jinja2Templates(directory="app/templates")
+
+
+@app.exception_handler(Exception)
+async def _generic_error(request: Request, exc: Exception):
+    if isinstance(exc, (RequestValidationError, HTTPException)):
+        raise exc
+    return HTMLResponse("<p>Erro interno. Tente novamente.</p>", status_code=500)
+
+
+@app.exception_handler(RequestValidationError)
+async def _validation_error(request: Request, exc: RequestValidationError):
+    return HTMLResponse("<p>Dados inválidos na requisição.</p>", status_code=422)
+
+
 templates.env.filters["fromjson"] = json.loads
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -70,8 +107,21 @@ app.include_router(caixa.router, prefix="/api")
 app.include_router(auditoria.router, prefix="/api")
 
 
+_SSE_CANAIS_STAFF = {"caixa", "cozinha", "auditoria"}
+
+
 @app.get("/sse/{channel}")
 async def sse_stream(channel: str, request: Request):
+    with Session(engine) as tmp:
+        if channel in _SSE_CANAIS_STAFF:
+            if not _DEMO_ENABLED and not _get_usuario(request, tmp):
+                return Response(status_code=401)
+        elif channel == "pedido":
+            if not _DEMO_ENABLED and not (_get_usuario(request, tmp) or _get_cliente(request, tmp)):
+                return Response(status_code=401)
+        else:
+            return Response(status_code=404)
+
     q = _sse.subscribe(channel)
 
     async def stream():
@@ -96,6 +146,33 @@ async def sse_stream(channel: str, request: Request):
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+_ERR_SESSAO = (
+    "<div class='bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3'>"
+    "Sessão expirada. <a href='/login' class='underline font-semibold'>Faça login novamente.</a>"
+    "</div>"
+)
+_ERR_PERMISSAO = (
+    "<div class='bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3'>"
+    "Sem permissão para esta ação."
+    "</div>"
+)
+
+
+def _auth_html(request: Request, session: Session, *perfis: str) -> tuple["Usuario | None", "HTMLResponse | None"]:
+    if _DEMO_ENABLED:
+        for perfil in perfis:
+            u = session.exec(select(Usuario).where(Usuario.perfil == perfil)).first()
+            if u:
+                return u, None
+        return None, HTMLResponse(_ERR_PERMISSAO, status_code=403)
+    usuario = _get_usuario(request, session)
+    if not usuario:
+        return None, HTMLResponse(_ERR_SESSAO, status_code=401)
+    if usuario.perfil not in set(perfis):
+        return None, HTMLResponse(_ERR_PERMISSAO, status_code=403)
+    return usuario, None
+
+
 def _get_cliente(request: Request, session: Session) -> Cliente | None:
     token = request.cookies.get("cliente_token")
     if not token:
@@ -119,9 +196,9 @@ def _carregar_itens(lista: list[Pedido], session: Session):
     itens = session.exec(select(ItemPedido).where(ItemPedido.pedido_id.in_(ids))).all()
     if itens:
         prod_ids = list({i.produto_id for i in itens})
-        produtos = {p.id: p for p in session.exec(select(Produto).where(Produto.id.in_(prod_ids))).all()}
+        prods = {p.id: p for p in session.exec(select(Produto).where(Produto.id.in_(prod_ids))).all()}
         for item in itens:
-            item.produto = produtos.get(item.produto_id)
+            item.produto = prods.get(item.produto_id)
     por_pedido: dict[int, list] = {p.id: [] for p in lista}
     for item in itens:
         por_pedido[item.pedido_id].append(item)
@@ -194,6 +271,10 @@ def _tabela_produtos(request: Request, session: Session) -> HTMLResponse:
     return templates.TemplateResponse(request, "partials/tabela_produtos.html", {"produtos": prods})
 
 
+def _demo_guard():
+    if not _DEMO_ENABLED:
+        raise HTTPException(status_code=404)
+
 
 # ── Páginas ───────────────────────────────────────────────────────────────────
 
@@ -209,6 +290,13 @@ def pagina_login(request: Request, next: str = "/"):
 
 @app.post("/login", response_class=HTMLResponse)
 async def processar_login(request: Request, session: Session = Depends(get_session)):
+    ip = request.client.host if request.client else "unknown"
+    if not _rate_limit_ok(f"login:{ip}"):
+        return templates.TemplateResponse(request, "login.html", {
+            "next": "/",
+            "erro": "Muitas tentativas. Aguarde um minuto.",
+        }, status_code=429)
+
     form = await request.form()
     login = form["login"].strip()
     senha = form["senha"]
@@ -229,7 +317,7 @@ async def processar_login(request: Request, session: Session = Depends(get_sessi
     destino = next_url if usuario.perfil in perfis_next else f"/{usuario.perfil}"
 
     resp = RedirectResponse(url=destino, status_code=303)
-    resp.set_cookie("usuario_token", usuario.token, httponly=True, max_age=86400, samesite="lax")
+    resp.set_cookie("usuario_token", usuario.token, httponly=True, max_age=86400, samesite="strict", secure=_HTTPS)
     return resp
 
 
@@ -359,7 +447,7 @@ def _resposta_cliente_logado(request: Request, cliente: Cliente, session: Sessio
             "cliente": cliente, "pedido_ativo": None,
             "produtos": prods, "historico": _historico_cliente(cliente, session),
         })
-    resp.set_cookie("cliente_token", cliente.token, httponly=True, max_age=86400 * 30, samesite="lax")
+    resp.set_cookie("cliente_token", cliente.token, httponly=True, max_age=86400 * 30, samesite="lax", secure=_HTTPS)
     return resp
 
 
@@ -395,6 +483,13 @@ async def cliente_registrar(request: Request, session: Session = Depends(get_ses
 
 @app.post("/cliente/entrar", response_class=HTMLResponse)
 async def cliente_entrar(request: Request, session: Session = Depends(get_session)):
+    ip = request.client.host if request.client else "unknown"
+    if not _rate_limit_ok(f"cliente_entrar:{ip}"):
+        return templates.TemplateResponse(request, "cliente.html", {
+            "cliente": None,
+            "erro_entrar": "Muitas tentativas. Aguarde um minuto.",
+        }, status_code=429)
+
     form = await request.form()
     telefone = form["telefone"].strip()
     senha = form.get("senha", "").strip()
@@ -425,7 +520,7 @@ def cliente_sair():
 # ── Cliente: pedido ───────────────────────────────────────────────────────────
 
 @app.post("/cliente/pedido", response_class=HTMLResponse)
-async def cliente_criar_pedido(request: Request, session: Session = Depends(get_session)):
+async def cliente_criar_pedido(request: Request, background_tasks: BackgroundTasks, session: Session = Depends(get_session)):
     cliente = _get_cliente(request, session)
     if not cliente:
         return HTMLResponse("<p class='text-red-500 font-semibold'>Faça login para realizar um pedido.</p>")
@@ -444,7 +539,6 @@ async def cliente_criar_pedido(request: Request, session: Session = Depends(get_
     session.commit()
     session.refresh(pedido)
 
-    itens_confirmados = []
     for chave, valor in form.items():
         if not chave.startswith("item_"):
             continue
@@ -456,10 +550,9 @@ async def cliente_criar_pedido(request: Request, session: Session = Depends(get_
         if not produto:
             continue
         session.add(ItemPedido(pedido_id=pedido.id, produto_id=produto_id, quantidade=quantidade))
-        itens_confirmados.append({"quantidade": quantidade, "nome": produto.nome})
 
     session.commit()
-    await _sse.broadcast("caixa")
+    background_tasks.add_task(_sse.broadcast, "caixa")
     resp = Response(status_code=200)
     resp.headers["HX-Redirect"] = "/cliente"
     return resp
@@ -487,7 +580,7 @@ def cliente_form_edicao(pedido_id: int, request: Request, session: Session = Dep
 
 
 @app.post("/cliente/pedido/{pedido_id}/solicitar-edicao", response_class=HTMLResponse)
-async def cliente_solicitar_edicao(pedido_id: int, request: Request, session: Session = Depends(get_session)):
+async def cliente_solicitar_edicao(pedido_id: int, request: Request, background_tasks: BackgroundTasks, session: Session = Depends(get_session)):
     cliente = _get_cliente(request, session)
     pedido = session.get(Pedido, pedido_id)
     if not pedido or not cliente or pedido.cliente_id != cliente.id:
@@ -522,7 +615,7 @@ async def cliente_solicitar_edicao(pedido_id: int, request: Request, session: Se
     session.add(sol)
     session.commit()
     session.refresh(sol)
-    await _sse.broadcast("cozinha")
+    background_tasks.add_task(_sse.broadcast, "cozinha")
 
     return templates.TemplateResponse(request, "partials/edicao_aguardando.html", {
         "pedido": pedido,
@@ -541,7 +634,12 @@ def fragmento_solicitacoes(request: Request, session: Session = Depends(get_sess
 
 
 @app.post("/cozinha/solicitacoes/{sol_id}/aprovar", response_class=HTMLResponse)
-async def cozinha_aprovar_edicao(sol_id: int, request: Request, session: Session = Depends(get_session)):
+def cozinha_aprovar_edicao(
+    sol_id: int, request: Request, background_tasks: BackgroundTasks, session: Session = Depends(get_session)
+):
+    _, err = _auth_html(request, session, "cozinha", "auditoria")
+    if err:
+        return err
     sol = session.get(SolicitacaoEdicao, sol_id)
     if not sol or sol.status != StatusSolicitacao.pendente:
         return HTMLResponse("")
@@ -566,32 +664,41 @@ async def cozinha_aprovar_edicao(sol_id: int, request: Request, session: Session
     sol.status = StatusSolicitacao.aprovado
     session.add(sol)
     session.commit()
-    await _sse.broadcast("cozinha", "pedido")
+    background_tasks.add_task(_sse.broadcast, "cozinha", "pedido")
 
     return _fragmento_solicitacoes_atualizado(request, session)
 
 
 @app.post("/cozinha/solicitacoes/{sol_id}/rejeitar", response_class=HTMLResponse)
-async def cozinha_rejeitar_edicao(sol_id: int, request: Request, session: Session = Depends(get_session)):
+def cozinha_rejeitar_edicao(
+    sol_id: int, request: Request, background_tasks: BackgroundTasks, session: Session = Depends(get_session)
+):
+    _, err = _auth_html(request, session, "cozinha", "auditoria")
+    if err:
+        return err
     sol = session.get(SolicitacaoEdicao, sol_id)
     if sol:
         sol.status = StatusSolicitacao.rejeitado
         session.add(sol)
         session.commit()
-    await _sse.broadcast("cozinha", "pedido")
+    background_tasks.add_task(_sse.broadcast, "cozinha", "pedido")
     return _fragmento_solicitacoes_atualizado(request, session)
 
 
 @app.post("/cozinha/pedido/{pedido_id}/status", response_class=HTMLResponse)
-async def cozinha_atualizar_status(
-    pedido_id: int, status: StatusPedido, request: Request, session: Session = Depends(get_session)
+def cozinha_atualizar_status(
+    pedido_id: int, status: StatusPedido, request: Request, background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
 ):
+    _, err = _auth_html(request, session, "cozinha", "auditoria")
+    if err:
+        return err
     pedido = session.get(Pedido, pedido_id)
     if pedido:
         pedido.status = status
         session.add(pedido)
         session.commit()
-    await _sse.broadcast("cozinha", "pedido", "caixa")
+    background_tasks.add_task(_sse.broadcast, "cozinha", "pedido", "caixa")
     return fragmento_pedidos_ativos(request, session)
 
 
@@ -645,8 +752,11 @@ def fragmento_caixa_pedido(codigo: str, request: Request, session: Session = Dep
 
 @app.post("/caixa/pedido/{pedido_id}/pagar", response_class=HTMLResponse)
 async def fragmento_confirmar_pagamento(
-    pedido_id: int, request: Request, session: Session = Depends(get_session),
+    pedido_id: int, request: Request, background_tasks: BackgroundTasks, session: Session = Depends(get_session),
 ):
+    _, err = _auth_html(request, session, "caixa", "auditoria")
+    if err:
+        return err
     form = await request.form()
     pedido = session.get(Pedido, pedido_id)
     if not pedido:
@@ -663,7 +773,7 @@ async def fragmento_confirmar_pagamento(
         valor=float(form["valor_pago"]),
     ))
     session.commit()
-    await _sse.broadcast("caixa", "auditoria", "pedido")
+    background_tasks.add_task(_sse.broadcast, "caixa", "auditoria", "pedido")
     session.refresh(pedido)
     _carregar_itens([pedido], session)
     total = sum(item.quantidade * session.get(Produto, item.produto_id).preco for item in pedido.itens)
@@ -707,7 +817,12 @@ def fragmento_caixa_aceitos(request: Request, session: Session = Depends(get_ses
 
 
 @app.post("/caixa/pedido/{pedido_id}/aprovar", response_class=HTMLResponse)
-async def caixa_aprovar_pedido(pedido_id: int, request: Request, session: Session = Depends(get_session)):
+async def caixa_aprovar_pedido(
+    pedido_id: int, request: Request, background_tasks: BackgroundTasks, session: Session = Depends(get_session)
+):
+    _, err = _auth_html(request, session, "caixa", "auditoria")
+    if err:
+        return err
     form = await request.form()
     pedido = session.get(Pedido, pedido_id)
     if not pedido or pedido.status != StatusPedido.pendente:
@@ -720,23 +835,33 @@ async def caixa_aprovar_pedido(pedido_id: int, request: Request, session: Sessio
     pedido.status = StatusPedido.aguardando
     session.add(pedido)
     session.commit()
-    await _sse.broadcast("caixa", "cozinha", "pedido")
+    background_tasks.add_task(_sse.broadcast, "caixa", "cozinha", "pedido")
     return _fragmento_pendentes(request, session)
 
 
 @app.post("/caixa/pedido/{pedido_id}/rejeitar", response_class=HTMLResponse)
-async def caixa_rejeitar_pedido(pedido_id: int, request: Request, session: Session = Depends(get_session)):
+def caixa_rejeitar_pedido(
+    pedido_id: int, request: Request, background_tasks: BackgroundTasks, session: Session = Depends(get_session)
+):
+    _, err = _auth_html(request, session, "caixa", "auditoria")
+    if err:
+        return err
     pedido = session.get(Pedido, pedido_id)
     if pedido and pedido.status == StatusPedido.pendente:
         pedido.status = StatusPedido.cancelado
         session.add(pedido)
         session.commit()
-    await _sse.broadcast("caixa", "pedido")
+    background_tasks.add_task(_sse.broadcast, "caixa", "pedido")
     return _fragmento_pendentes(request, session)
 
 
 @app.post("/caixa/registrar-pedido", response_class=HTMLResponse)
-async def caixa_registrar_pedido(request: Request, session: Session = Depends(get_session)):
+async def caixa_registrar_pedido(
+    request: Request, background_tasks: BackgroundTasks, session: Session = Depends(get_session)
+):
+    _, err = _auth_html(request, session, "caixa", "auditoria")
+    if err:
+        return err
     form = await request.form()
     tipo = TipoEntrega(form.get("tipo_entrega", "local"))
     mesa = int(form["mesa"]) if tipo == TipoEntrega.local and form.get("mesa") else None
@@ -769,6 +894,7 @@ async def caixa_registrar_pedido(request: Request, session: Session = Depends(ge
         return HTMLResponse("<p class='text-red-500 font-semibold'>Selecione ao menos um item.</p>")
 
     session.commit()
+    background_tasks.add_task(_sse.broadcast, "cozinha", "caixa")
     return HTMLResponse(
         f"<div class='bg-green-50 border border-green-300 rounded-xl p-4 text-green-700 font-semibold'>"
         f"Pedido <strong>#{pedido.id}</strong> registrado e enviado para a cozinha!"
@@ -787,11 +913,13 @@ _DEMO_USUARIOS = {
 
 @app.get("/demo", response_class=HTMLResponse)
 def pagina_demo(request: Request):
+    _demo_guard()
     return templates.TemplateResponse(request, "demo.html", {})
 
 
 @app.get("/demo/caixa", response_class=HTMLResponse)
 def demo_caixa(request: Request, session: Session = Depends(get_session)):
+    _demo_guard()
     usuario = _DEMO_USUARIOS["caixa"]
     prods = session.exec(select(Produto).where(Produto.disponivel == True)).all()
     pendentes = session.exec(select(Pedido).where(Pedido.status == StatusPedido.pendente)).all()
@@ -807,6 +935,7 @@ def demo_caixa(request: Request, session: Session = Depends(get_session)):
 
 @app.get("/demo/cozinha", response_class=HTMLResponse)
 def demo_cozinha(request: Request, session: Session = Depends(get_session)):
+    _demo_guard()
     usuario = _DEMO_USUARIOS["cozinha"]
     solicitacoes = session.exec(
         select(SolicitacaoEdicao).where(SolicitacaoEdicao.status == StatusSolicitacao.pendente)
@@ -822,6 +951,7 @@ def demo_cozinha(request: Request, session: Session = Depends(get_session)):
 
 @app.get("/demo/auditoria", response_class=HTMLResponse)
 def demo_auditoria(request: Request, session: Session = Depends(get_session)):
+    _demo_guard()
     usuario = _DEMO_USUARIOS["auditoria"]
     movimentos = session.exec(select(Movimento).order_by(Movimento.registrado_em.desc())).all()
     prods = session.exec(select(Produto)).all()
@@ -833,6 +963,7 @@ def demo_auditoria(request: Request, session: Session = Depends(get_session)):
 
 @app.get("/demo/cliente", response_class=HTMLResponse)
 def demo_cliente(request: Request, session: Session = Depends(get_session)):
+    _demo_guard()
     cliente = session.exec(select(Cliente).where(Cliente.telefone == "00000000000")).first()
     if not cliente:
         prods = session.exec(select(Produto).where(Produto.disponivel == True)).all()
@@ -857,14 +988,20 @@ def demo_cliente(request: Request, session: Session = Depends(get_session)):
 
 @app.post("/admin/produtos", response_class=HTMLResponse)
 async def admin_criar_produto(request: Request, session: Session = Depends(get_session)):
+    _, err = _auth_html(request, session, "auditoria")
+    if err:
+        return err
     form = await request.form()
-    session.add(Produto(nome=form["nome"], preco=float(form["preco"])))
+    session.add(Produto(nome=form["nome"][:120], preco=float(form["preco"])))
     session.commit()
     return _tabela_produtos(request, session)
 
 
 @app.get("/admin/produtos/{produto_id}/editar", response_class=HTMLResponse)
 def admin_editar_produto(produto_id: int, request: Request, session: Session = Depends(get_session)):
+    _, err = _auth_html(request, session, "auditoria")
+    if err:
+        return err
     produto = session.get(Produto, produto_id)
     if not produto:
         return HTMLResponse("<tr><td colspan='4' class='text-red-500 px-4 py-3'>Produto não encontrado.</td></tr>")
@@ -873,6 +1010,9 @@ def admin_editar_produto(produto_id: int, request: Request, session: Session = D
 
 @app.get("/admin/produtos/{produto_id}/cancelar", response_class=HTMLResponse)
 def admin_cancelar_edicao(produto_id: int, request: Request, session: Session = Depends(get_session)):
+    _, err = _auth_html(request, session, "auditoria")
+    if err:
+        return err
     produto = session.get(Produto, produto_id)
     if not produto:
         return HTMLResponse("")
@@ -881,11 +1021,14 @@ def admin_cancelar_edicao(produto_id: int, request: Request, session: Session = 
 
 @app.patch("/admin/produtos/{produto_id}", response_class=HTMLResponse)
 async def admin_salvar_produto(produto_id: int, request: Request, session: Session = Depends(get_session)):
+    _, err = _auth_html(request, session, "auditoria")
+    if err:
+        return err
     form = await request.form()
     produto = session.get(Produto, produto_id)
     if not produto:
         return HTMLResponse("<tr><td colspan='4' class='text-red-500 px-4 py-3'>Produto não encontrado.</td></tr>")
-    produto.nome = form["nome"]
+    produto.nome = form["nome"][:120]
     produto.preco = float(form["preco"])
     produto.disponivel = form["disponivel"] == "true"
     session.add(produto)
@@ -896,6 +1039,9 @@ async def admin_salvar_produto(produto_id: int, request: Request, session: Sessi
 
 @app.patch("/admin/produtos/{produto_id}/disponibilidade", response_class=HTMLResponse)
 def admin_toggle_disponibilidade(produto_id: int, request: Request, session: Session = Depends(get_session)):
+    _, err = _auth_html(request, session, "auditoria")
+    if err:
+        return err
     produto = session.get(Produto, produto_id)
     if not produto:
         return HTMLResponse("")
@@ -908,6 +1054,9 @@ def admin_toggle_disponibilidade(produto_id: int, request: Request, session: Ses
 
 @app.delete("/admin/produtos/{produto_id}", response_class=HTMLResponse)
 def admin_apagar_produto(produto_id: int, request: Request, session: Session = Depends(get_session)):
+    _, err = _auth_html(request, session, "auditoria")
+    if err:
+        return err
     produto = session.get(Produto, produto_id)
     if produto:
         session.delete(produto)
@@ -919,8 +1068,11 @@ def admin_apagar_produto(produto_id: int, request: Request, session: Session = D
 
 @app.post("/auditoria/movimentos", response_class=HTMLResponse)
 async def fragmento_registrar_movimento(request: Request, session: Session = Depends(get_session)):
+    _, err = _auth_html(request, session, "auditoria")
+    if err:
+        return err
     form = await request.form()
-    session.add(Movimento(tipo=TipoMovimento(form["tipo"]), descricao=form["descricao"], valor=float(form["valor"])))
+    session.add(Movimento(tipo=TipoMovimento(form["tipo"]), descricao=form["descricao"][:200], valor=float(form["valor"])))
     session.commit()
     movimentos = session.exec(select(Movimento).order_by(Movimento.registrado_em.desc())).all()
     lista_html = templates.get_template("partials/movimentos_lista.html").render(

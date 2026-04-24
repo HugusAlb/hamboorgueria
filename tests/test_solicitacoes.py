@@ -49,12 +49,12 @@ def test_cozinha_ve_solicitacao(client: TestClient, session: Session):
     assert "Fritas" in resp.text
 
 
-def test_aprovar_edicao_substitui_itens(client: TestClient, session: Session):
-    pedido, p1, p2 = _setup(session, client)
-    client.post(f"/cliente/pedido/{pedido.id}/solicitar-edicao", data={f"item_{p2.id}": "3"})
+def test_aprovar_edicao_substitui_itens(cozinha_client: TestClient, session: Session):
+    pedido, p1, p2 = _setup(session, cozinha_client)
+    cozinha_client.post(f"/cliente/pedido/{pedido.id}/solicitar-edicao", data={f"item_{p2.id}": "3"})
 
     sol = session.exec(select(SolicitacaoEdicao).where(SolicitacaoEdicao.pedido_id == pedido.id)).first()
-    resp = client.post(f"/cozinha/solicitacoes/{sol.id}/aprovar")
+    resp = cozinha_client.post(f"/cozinha/solicitacoes/{sol.id}/aprovar")
     assert resp.status_code == 200
 
     session.expire_all()
@@ -67,12 +67,12 @@ def test_aprovar_edicao_substitui_itens(client: TestClient, session: Session):
     assert itens[0].quantidade == 3
 
 
-def test_rejeitar_edicao(client: TestClient, session: Session):
-    pedido, p1, p2 = _setup(session, client)
-    client.post(f"/cliente/pedido/{pedido.id}/solicitar-edicao", data={f"item_{p1.id}": "1"})
+def test_rejeitar_edicao(cozinha_client: TestClient, session: Session):
+    pedido, p1, p2 = _setup(session, cozinha_client)
+    cozinha_client.post(f"/cliente/pedido/{pedido.id}/solicitar-edicao", data={f"item_{p1.id}": "1"})
 
     sol = session.exec(select(SolicitacaoEdicao).where(SolicitacaoEdicao.pedido_id == pedido.id)).first()
-    client.post(f"/cozinha/solicitacoes/{sol.id}/rejeitar")
+    cozinha_client.post(f"/cozinha/solicitacoes/{sol.id}/rejeitar")
 
     session.expire_all()
     sol = session.get(SolicitacaoEdicao, sol.id)

@@ -29,35 +29,36 @@
   </button>
 </div>
 
+<!-- SSE wrapper único para caixa (evita múltiplas conexões) -->
+<div hx-ext="sse" sse-connect="/sse/caixa">
+
 <!-- Aba: Pedidos Pendentes -->
 <div id="aba-pendentes">
-  <div hx-ext="sse" sse-connect="/sse/caixa">
-    <div id="pendentes-lista"
-         hx-get="/api/caixa/pendentes"
-         hx-trigger="sse:update"
-         hx-swap="innerHTML"
-         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {% with pedidos=pedidos_pendentes %}
-      {% include "partials/caixa_pendentes.html" %}
-      {% endwith %}
-    </div>
+  <div id="pendentes-lista"
+       hx-get="/api/caixa/pendentes"
+       hx-trigger="sse:update, every 15s"
+       hx-swap="innerHTML"
+       class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% with pedidos=pedidos_pendentes %}
+    {% include "partials/caixa_pendentes.html" %}
+    {% endwith %}
   </div>
 </div>
 
 <!-- Aba: Pedidos Aceitos -->
 <div id="aba-aceitos" class="hidden">
-  <div hx-ext="sse" sse-connect="/sse/caixa">
-    <div id="aceitos-lista"
-         hx-get="/api/caixa/aceitos"
-         hx-trigger="sse:update"
-         hx-swap="innerHTML"
-         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {% with pedidos=pedidos_aceitos %}
-      {% include "partials/caixa_aceitos.html" %}
-      {% endwith %}
-    </div>
+  <div id="aceitos-lista"
+       hx-get="/api/caixa/aceitos"
+       hx-trigger="sse:update, every 15s"
+       hx-swap="innerHTML"
+       class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% with pedidos=pedidos_aceitos %}
+    {% include "partials/caixa_aceitos.html" %}
+    {% endwith %}
   </div>
 </div>
+
+</div><!-- /sse wrapper -->
 
 <!-- Aba: Registrar Pedido -->
 <div id="aba-registrar" class="hidden">
