@@ -3,8 +3,8 @@ from sqlmodel import Session
 from app.models import ItemPedido, Movimento, Pagamento, Pedido, Produto, TipoMovimento
 
 
-def test_registrar_movimento(client: TestClient):
-    resp = client.post(
+def test_registrar_movimento(auditoria_client: TestClient):
+    resp = auditoria_client.post(
         "/api/auditoria/movimentos",
         json={"tipo": "saida", "descricao": "Fornecedor", "valor": 150.0},
     )
@@ -12,19 +12,19 @@ def test_registrar_movimento(client: TestClient):
     assert resp.json()["tipo"] == "saida"
 
 
-def test_resumo_json_vazio(client: TestClient):
-    resp = client.get("/api/auditoria/resumo")
+def test_resumo_json_vazio(auditoria_client: TestClient):
+    resp = auditoria_client.get("/api/auditoria/resumo")
     assert resp.status_code == 200
     data = resp.json()
     assert data == {"entradas": 0.0, "saidas": 0.0, "saldo": 0.0}
 
 
-def test_resumo_json_com_movimentos(client: TestClient, session: Session):
+def test_resumo_json_com_movimentos(auditoria_client: TestClient, session: Session):
     session.add(Movimento(tipo=TipoMovimento.entrada, descricao="Venda", valor=100.0))
     session.add(Movimento(tipo=TipoMovimento.saida, descricao="Gás", valor=40.0))
     session.commit()
 
-    resp = client.get("/api/auditoria/resumo")
+    resp = auditoria_client.get("/api/auditoria/resumo")
     data = resp.json()
     assert data["entradas"] == 100.0
     assert data["saidas"] == 40.0

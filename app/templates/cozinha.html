@@ -14,7 +14,7 @@
 <div hx-ext="sse" sse-connect="/sse/cozinha">
   <div id="solicitacoes-edicao"
        hx-get="/api/cozinha/solicitacoes"
-       hx-trigger="load, sse:update"
+       hx-trigger="load, sse:update, every 15s"
        hx-swap="innerHTML">
     {% include "partials/solicitacoes_edicao.html" %}
   </div>
@@ -22,7 +22,7 @@
   <!-- Pedidos ativos -->
   <div id="pedidos-lista"
        hx-get="/api/cozinha/pedidos-ativos"
-       hx-trigger="sse:update"
+       hx-trigger="sse:update, every 15s"
        hx-swap="innerHTML"
        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
     {% include "partials/pedidos_cozinha.html" %}
