@@ -5,21 +5,25 @@ description = "App web para hamburgueria"
 authors = [
     {name = "Hugus Albuquerque",email = "hugus.albuquerque@gmail.com"}
 ]
-requires-python = "^3.13"
+requires-python = ">=3.13"
 dependencies = [
-    "fastapi (==0.115.12)",
-    "uvicorn[standard] (>=0.45.0,<0.46.0)",
-    "sqlmodel (>=0.0.38,<0.0.39)",
-    "jinja2 (>=3.1.6,<4.0.0)",
-    "python-multipart (>=0.0.26,<0.0.27)",
-    "aiosqlite (>=0.22.1,<0.23.0)",
-    "python-dotenv (>=1.2.2,<2.0.0)"
+    "fastapi==0.115.12",
+    "uvicorn[standard]>=0.45.0,<0.46.0",
+    "sqlmodel>=0.0.38,<0.0.39",
+    "jinja2>=3.1.6,<4.0.0",
+    "python-multipart>=0.0.26,<0.0.27",
+    "aiosqlite>=0.22.1,<0.23.0",
+    "python-dotenv>=1.2.2,<2.0.0"
 ]
 
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=70"]
+build-backend = "setuptools.backends.legacy:build"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
 
 [dependency-groups]
 dev = [
