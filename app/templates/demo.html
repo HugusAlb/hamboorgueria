@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Demo — Hamboorgueria</title>
+  <title>Demo — 👻 Hamboorgueria</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👻</text></svg>" />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body { height: 100%; margin: 0; overflow: hidden; }
@@ -14,49 +15,45 @@
 
   <!-- Cabeçalho -->
   <div class="bg-gray-900 border-b border-gray-800 px-4 py-2 flex items-center justify-between shrink-0">
-    <span class="text-white font-bold text-lg">🍔 Hamboorgueria — Demo</span>
-    <span class="text-gray-400 text-xs">Todas as telas em tempo real</span>
+    <span class="text-white font-bold text-lg">👻 Hamboorgueria — Demo</span>
+    <span class="text-gray-400 text-xs">Tempo real</span>
   </div>
 
-  <!-- Grid de painéis -->
-  <div class="grid grid-cols-2 grid-rows-2 gap-2 p-2 flex-1 min-h-0">
-
-    <!-- Caixa -->
-    <div class="flex flex-col rounded-xl overflow-hidden border border-gray-700 shadow-lg">
-      <div class="bg-gray-800 text-white text-xs font-bold px-3 py-1.5 flex items-center gap-2 shrink-0">
-        <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
-        Caixa
-      </div>
-      <iframe src="/demo/caixa" title="Caixa"></iframe>
-    </div>
-
-    <!-- Cozinha -->
-    <div class="flex flex-col rounded-xl overflow-hidden border border-gray-700 shadow-lg">
-      <div class="bg-gray-800 text-white text-xs font-bold px-3 py-1.5 flex items-center gap-2 shrink-0">
-        <span class="w-2 h-2 rounded-full bg-orange-400"></span>
-        Cozinha
-      </div>
-      <iframe src="/demo/cozinha" title="Cozinha"></iframe>
-    </div>
-
-    <!-- Cliente -->
-    <div class="flex flex-col rounded-xl overflow-hidden border border-gray-700 shadow-lg">
-      <div class="bg-gray-800 text-white text-xs font-bold px-3 py-1.5 flex items-center gap-2 shrink-0">
-        <span class="w-2 h-2 rounded-full bg-blue-400"></span>
-        Cliente
-      </div>
-      <iframe src="/demo/cliente" title="Cliente"></iframe>
-    </div>
-
-    <!-- Auditoria -->
-    <div class="flex flex-col rounded-xl overflow-hidden border border-gray-700 shadow-lg">
-      <div class="bg-gray-800 text-white text-xs font-bold px-3 py-1.5 flex items-center gap-2 shrink-0">
-        <span class="w-2 h-2 rounded-full bg-green-400"></span>
-        Auditoria
-      </div>
-      <iframe src="/demo/auditoria" title="Auditoria"></iframe>
-    </div>
-
+  <!-- Barra de telas -->
+  <div class="bg-gray-900 border-b border-gray-800 px-2 flex gap-1 shrink-0" id="demo-tabs">
+    <button data-src="/demo/caixa" onclick="mudarTela(this)"
+            class="demo-tab flex items-center gap-2 text-sm font-semibold px-4 py-2.5 border-b-2 border-transparent text-gray-400 hover:text-white transition">
+      <span class="w-2 h-2 rounded-full bg-yellow-400"></span> Caixa
+    </button>
+    <button data-src="/demo/cozinha" onclick="mudarTela(this)"
+            class="demo-tab flex items-center gap-2 text-sm font-semibold px-4 py-2.5 border-b-2 border-transparent text-gray-400 hover:text-white transition">
+      <span class="w-2 h-2 rounded-full bg-orange-400"></span> Cozinha
+    </button>
+    <button data-src="/demo/cliente" onclick="mudarTela(this)"
+            class="demo-tab flex items-center gap-2 text-sm font-semibold px-4 py-2.5 border-b-2 border-transparent text-gray-400 hover:text-white transition">
+      <span class="w-2 h-2 rounded-full bg-blue-400"></span> Cliente
+    </button>
+    <button data-src="/demo/auditoria" onclick="mudarTela(this)"
+            class="demo-tab flex items-center gap-2 text-sm font-semibold px-4 py-2.5 border-b-2 border-transparent text-gray-400 hover:text-white transition">
+      <span class="w-2 h-2 rounded-full bg-green-400"></span> Auditoria
+    </button>
   </div>
+
+  <!-- Tela selecionada -->
+  <div class="flex-1 min-h-0">
+    <iframe id="demo-frame" src="/demo/caixa" title="Demo"></iframe>
+  </div>
+
+  <script>
+    function mudarTela(botao) {
+      document.getElementById('demo-frame').src = botao.dataset.src;
+      document.querySelectorAll('.demo-tab').forEach(b => {
+        b.classList.toggle('border-orange-500', b === botao);
+        b.classList.toggle('text-white', b === botao);
+        b.classList.toggle('text-gray-400', b !== botao);
+      });
+    }
+    mudarTela(document.querySelector('.demo-tab'));
+  </script>
 </body>
 </html>

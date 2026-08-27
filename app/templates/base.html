@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% block title %}Hamboorgueria{% endblock %}</title>
+  <title>{% block title %}👻 Hamboorgueria{% endblock %}</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👻</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&display=swap" rel="stylesheet" />
   <script>
     tailwind.config = { darkMode: 'class' }
   </script>
@@ -20,9 +23,15 @@
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
 
-  <nav class="bg-yellow-500 shadow-md">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap gap-4 items-center justify-between">
-      <span class="text-2xl font-bold text-white">🍔 Hamboorgueria</span>
+  <nav class="relative bg-gradient-to-r from-orange-600 via-orange-600 to-purple-950 shadow-md overflow-hidden">
+    <svg class="absolute top-0 left-0 w-16 h-16 md:w-24 md:h-24 opacity-20 pointer-events-none" viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="1.5">
+      <path d="M0,0 L100,0 M0,0 L92.4,38.3 M0,0 L70.7,70.7 M0,0 L38.3,92.4 M0,0 L0,100" />
+      <path d="M25,0 A25,25 0 0 1 0,25" />
+      <path d="M50,0 A50,50 0 0 1 0,50" />
+      <path d="M75,0 A75,75 0 0 1 0,75" />
+    </svg>
+    <div class="relative max-w-7xl mx-auto px-4 py-3 flex flex-wrap gap-4 items-center justify-between">
+      <span class="font-spooky text-3xl text-white [text-shadow:0_0_10px_rgba(255,255,255,0.5)]">👻 Hamboorgueria</span>
       <div class="flex gap-3 flex-wrap items-center">
         {% if usuario %}
           {% if usuario.perfil in ['cozinha', 'auditoria'] %}
@@ -42,7 +51,7 @@
         <button onclick="alternarTema()"
                 id="btn-tema"
                 class="ml-2 bg-white/20 hover:bg-white/30 text-white font-bold px-3 py-1 rounded-full text-sm transition">
-          🌙
+          🦇
         </button>
       </div>
     </div>
@@ -57,12 +66,12 @@
       const html = document.documentElement;
       const escuro = html.classList.toggle('dark');
       localStorage.setItem('tema', escuro ? 'escuro' : 'claro');
-      document.getElementById('btn-tema').textContent = escuro ? '☀️' : '🌙';
+      document.getElementById('btn-tema').textContent = escuro ? '🎃' : '🦇';
     }
 
     // Ícone inicial correto
     if (localStorage.getItem('tema') === 'escuro') {
-      document.getElementById('btn-tema').textContent = '☀️';
+      document.getElementById('btn-tema').textContent = '🎃';
     }
 
     // Reprocessa classes Tailwind após qualquer swap do HTMX

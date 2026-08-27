@@ -1,14 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Creepster&display=swap');
+
 /* Transição suave ao trocar tema */
 *, *::before, *::after {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
 }
 
-/* ── Modo Noturno ─────────────────────────────────────── */
-.dark body                       { background-color: #0f1523 !important; }
-.dark .bg-gray-100               { background-color: #0f1523 !important; }
-.dark .bg-white                  { background-color: #1e2a3a !important; }
-.dark .bg-gray-50                { background-color: #172030 !important; }
-.dark .bg-gray-100.min-h-screen  { background-color: #0f1523 !important; }
+/* Fonte temática (só títulos/marca, nunca corpo de texto) */
+.font-spooky, h1 {
+  font-family: 'Creepster', cursive;
+  letter-spacing: 1px;
+}
+
+/* Sombras mais dramáticas nos cards */
+.shadow, .shadow-sm, .shadow-md, .shadow-lg {
+  box-shadow: 0 10px 25px -5px rgba(124, 45, 18, 0.18), 0 4px 10px -4px rgba(46, 16, 101, 0.15) !important;
+}
+
+/* ── Tema Halloween (recolore a marca amarela p/ abóbora) ── */
+.bg-yellow-500                      { background-color: #ea580c !important; }
+.hover\:bg-yellow-600:hover         { background-color: #c2410c !important; }
+.bg-yellow-400                      { background-color: #fb923c !important; }
+.hover\:bg-yellow-500:hover         { background-color: #ea580c !important; }
+.text-yellow-600,
+.text-yellow-700                    { color: #c2410c !important; }
+.border-yellow-500                  { border-color: #ea580c !important; }
+.peer:checked ~ .peer-checked\:text-yellow-700   { color: #c2410c !important; }
+.peer:checked ~ .peer-checked\:border-yellow-500 { border-color: #ea580c !important; }
+.peer:checked ~ .peer-checked\:bg-yellow-50      { background-color: #ffedd5 !important; }
+.dark .peer:checked ~ .peer-checked\:bg-yellow-50 { background-color: #43230a !important; }
+
+/* ── Modo Noturno (assombrado: roxo/preto) ───────────────── */
+.dark body                       { background-color: #160b26 !important; }
+.dark .bg-gray-100               { background-color: #160b26 !important; }
+.dark .bg-white                  { background-color: #26163a !important; }
+.dark .bg-gray-50                { background-color: #1d1130 !important; }
+.dark .bg-gray-100.min-h-screen  { background-color: #160b26 !important; }
 
 /* Textos */
 .dark .text-gray-800,
@@ -20,26 +46,26 @@
 
 /* Bordas */
 .dark .border-gray-200,
-.dark .border-gray-100           { border-color: #2d3f55 !important; }
-.dark .border-gray-300           { border-color: #3d5269 !important; }
+.dark .border-gray-100           { border-color: #3a2350 !important; }
+.dark .border-gray-300           { border-color: #4a2d66 !important; }
 
 /* Tabelas */
-.dark .divide-gray-100 > * + *   { border-color: #2d3f55 !important; }
-.dark .hover\:bg-gray-50:hover   { background-color: #1e2a3a !important; }
+.dark .divide-gray-100 > * + *   { border-color: #3a2350 !important; }
+.dark .hover\:bg-gray-50:hover   { background-color: #26163a !important; }
 
 /* Inputs e selects */
 .dark input:not([type="number"][readonly]),
 .dark select,
 .dark textarea {
-  background-color: #253347 !important;
+  background-color: #2e1a44 !important;
   color: #e2e8f0 !important;
-  border-color: #3d5269 !important;
+  border-color: #4a2d66 !important;
 }
 .dark input::placeholder,
-.dark textarea::placeholder      { color: #64748b !important; }
+.dark textarea::placeholder      { color: #7c6a94 !important; }
 
 /* Nav */
-.dark nav                        { background-color: #b45309 !important; }
+.dark nav                        { background: linear-gradient(to right, #7c2d12, #7c2d12, #2e1065) !important; }
 
 /* Sombras */
 .dark .shadow,
