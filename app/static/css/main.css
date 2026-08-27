@@ -11,6 +11,12 @@
   letter-spacing: 1px;
 }
 
+/* Evita que o teclado/barra do navegador mobile "encurte" a tela (100vh vs 100dvh) */
+.min-h-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 /* Sombras mais dramáticas nos cards */
 .shadow, .shadow-sm, .shadow-md, .shadow-lg {
   box-shadow: 0 10px 25px -5px rgba(124, 45, 18, 0.18), 0 4px 10px -4px rgba(46, 16, 101, 0.15) !important;

@@ -30,34 +30,34 @@
       <path d="M50,0 A50,50 0 0 1 0,50" />
       <path d="M75,0 A75,75 0 0 1 0,75" />
     </svg>
-    <div class="relative max-w-7xl mx-auto px-4 py-3 flex flex-wrap gap-4 items-center justify-between">
-      <span class="font-spooky text-3xl text-white [text-shadow:0_0_10px_rgba(255,255,255,0.5)]">👻 Hamboorgueria</span>
-      <div class="flex gap-3 flex-wrap items-center">
+    <div class="relative max-w-7xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex flex-wrap gap-2 sm:gap-4 items-center justify-between">
+      <span class="font-spooky text-xl sm:text-3xl text-white [text-shadow:0_0_10px_rgba(255,255,255,0.5)]">👻 Hamboorgueria</span>
+      <div class="flex gap-2 sm:gap-3 flex-wrap items-center">
         {% if usuario %}
           {% if usuario.perfil in ['cozinha', 'auditoria'] %}
-          <a href="/cozinha"   class="text-white font-semibold hover:underline">Cozinha</a>
+          <a href="/cozinha"   class="text-white text-sm sm:text-base font-semibold hover:underline">Cozinha</a>
           {% endif %}
           {% if usuario.perfil in ['caixa', 'auditoria'] %}
-          <a href="/caixa"     class="text-white font-semibold hover:underline">Caixa</a>
+          <a href="/caixa"     class="text-white text-sm sm:text-base font-semibold hover:underline">Caixa</a>
           {% endif %}
           {% if usuario.perfil == 'auditoria' %}
-          <a href="/auditoria" class="text-white font-semibold hover:underline">Auditoria</a>
+          <a href="/auditoria" class="text-white text-sm sm:text-base font-semibold hover:underline">Auditoria</a>
           {% endif %}
-          <span class="text-white/70 text-sm border-l border-white/30 pl-3">{{ usuario.login }}</span>
+          <span class="hidden sm:inline text-white/70 text-sm border-l border-white/30 pl-3">{{ usuario.login }}</span>
           <a href="/logout" class="bg-white/20 hover:bg-white/30 text-white text-sm font-semibold px-3 py-1 rounded-full">Sair</a>
         {% else %}
           <a href="/cliente" class="text-white font-semibold hover:underline">Cliente</a>
         {% endif %}
         <button onclick="alternarTema()"
                 id="btn-tema"
-                class="ml-2 bg-white/20 hover:bg-white/30 text-white font-bold px-3 py-1 rounded-full text-sm transition">
+                class="ml-1 sm:ml-2 bg-white/20 hover:bg-white/30 text-white font-bold px-3 py-1 rounded-full text-sm transition">
           🦇
         </button>
       </div>
     </div>
   </nav>
 
-  <main class="max-w-7xl mx-auto px-4 py-8">
+  <main class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
     {% block content %}{% endblock %}
   </main>
 
