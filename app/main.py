@@ -968,20 +968,7 @@ def demo_cliente(request: Request, session: Session = Depends(get_session)):
     if not cliente:
         prods = session.exec(select(Produto).where(Produto.disponivel == True)).all()
         return templates.TemplateResponse(request, "cliente.html", {"cliente": None, "produtos": prods})
-    ativo = _pedido_ativo(cliente, session)
-    if ativo:
-        _carregar_itens([ativo], session)
-        sol = _solicitacao_pendente(ativo.id, session)
-        return templates.TemplateResponse(request, "cliente.html", {
-            "cliente": cliente, "pedido_ativo": ativo, "solicitacao": sol,
-        })
-    prods = session.exec(select(Produto).where(Produto.disponivel == True)).all()
-    return templates.TemplateResponse(request, "cliente.html", {
-        "cliente": cliente,
-        "pedido_ativo": None,
-        "produtos": prods,
-        "historico": _historico_cliente(cliente, session),
-    })
+    return _resposta_cliente_logado(request, cliente, session)
 
 
 # ── Admin: produtos ───────────────────────────────────────────────────────────
