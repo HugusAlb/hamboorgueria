@@ -19,38 +19,59 @@
     <span class="text-gray-400 text-xs">Tempo real</span>
   </div>
 
-  <!-- Barra de telas -->
-  <div class="bg-gray-900 border-b border-gray-800 px-2 flex gap-1 shrink-0" id="demo-tabs">
-    <button data-src="/demo/caixa" onclick="mudarTela(this)"
-            class="demo-tab flex items-center gap-2 text-sm font-semibold px-4 py-2.5 border-b-2 border-transparent text-gray-400 hover:text-white transition">
-      <span class="w-2 h-2 rounded-full bg-yellow-400"></span> Caixa
-    </button>
-    <button data-src="/demo/cozinha" onclick="mudarTela(this)"
-            class="demo-tab flex items-center gap-2 text-sm font-semibold px-4 py-2.5 border-b-2 border-transparent text-gray-400 hover:text-white transition">
-      <span class="w-2 h-2 rounded-full bg-orange-400"></span> Cozinha
-    </button>
-    <button data-src="/demo/cliente" onclick="mudarTela(this)"
-            class="demo-tab flex items-center gap-2 text-sm font-semibold px-4 py-2.5 border-b-2 border-transparent text-gray-400 hover:text-white transition">
-      <span class="w-2 h-2 rounded-full bg-blue-400"></span> Cliente
-    </button>
-    <button data-src="/demo/auditoria" onclick="mudarTela(this)"
-            class="demo-tab flex items-center gap-2 text-sm font-semibold px-4 py-2.5 border-b-2 border-transparent text-gray-400 hover:text-white transition">
-      <span class="w-2 h-2 rounded-full bg-green-400"></span> Auditoria
-    </button>
+  <!-- Barra de telas: segue o fluxo do pedido, Cliente -> Caixa -> Cozinha -> Auditoria -->
+  <div class="bg-gray-900 border-b-2 border-orange-500/40 shadow-[0_2px_12px_-2px_rgba(249,115,22,0.25)] shrink-0">
+    <div class="px-2 py-2 flex items-center gap-1 overflow-x-auto whitespace-nowrap" id="demo-tabs">
+      <button data-src="/demo/cliente" data-cor="blue" onclick="mudarTela(this)"
+              class="demo-tab shrink-0 flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-lg border-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-800 transition">
+        <span class="w-2.5 h-2.5 rounded-full bg-blue-400"></span> Cliente
+        <span class="marcador-atual hidden text-[10px] font-normal uppercase tracking-wide px-1.5 py-0.5 rounded bg-white/10">você está aqui</span>
+      </button>
+      <span class="text-gray-600 shrink-0 px-0.5">→</span>
+      <button data-src="/demo/caixa" data-cor="yellow" onclick="mudarTela(this)"
+              class="demo-tab shrink-0 flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-lg border-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-800 transition">
+        <span class="w-2.5 h-2.5 rounded-full bg-yellow-400"></span> Caixa
+        <span class="marcador-atual hidden text-[10px] font-normal uppercase tracking-wide px-1.5 py-0.5 rounded bg-white/10">você está aqui</span>
+      </button>
+      <span class="text-gray-600 shrink-0 px-0.5">→</span>
+      <button data-src="/demo/cozinha" data-cor="orange" onclick="mudarTela(this)"
+              class="demo-tab shrink-0 flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-lg border-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-800 transition">
+        <span class="w-2.5 h-2.5 rounded-full bg-orange-400"></span> Cozinha
+        <span class="marcador-atual hidden text-[10px] font-normal uppercase tracking-wide px-1.5 py-0.5 rounded bg-white/10">você está aqui</span>
+      </button>
+      <span class="text-gray-600 shrink-0 px-0.5">→</span>
+      <button data-src="/demo/auditoria" data-cor="green" onclick="mudarTela(this)"
+              class="demo-tab shrink-0 flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-lg border-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-800 transition">
+        <span class="w-2.5 h-2.5 rounded-full bg-green-400"></span> Auditoria
+        <span class="marcador-atual hidden text-[10px] font-normal uppercase tracking-wide px-1.5 py-0.5 rounded bg-white/10">você está aqui</span>
+      </button>
+    </div>
   </div>
 
   <!-- Tela selecionada -->
   <div class="flex-1 min-h-0">
-    <iframe id="demo-frame" src="/demo/caixa" title="Demo"></iframe>
+    <iframe id="demo-frame" src="/demo/cliente" title="Demo"></iframe>
   </div>
 
   <script>
+    // Classes de destaque por cor (escritas por extenso para o Tailwind CDN gerar o CSS)
+    const CORES_ATIVAS = {
+      blue:   ['border-blue-400', 'bg-blue-500/10', 'ring-1', 'ring-blue-400/40'],
+      yellow: ['border-yellow-400', 'bg-yellow-500/10', 'ring-1', 'ring-yellow-400/40'],
+      orange: ['border-orange-400', 'bg-orange-500/10', 'ring-1', 'ring-orange-400/40'],
+      green:  ['border-green-400', 'bg-green-500/10', 'ring-1', 'ring-green-400/40'],
+    };
+    const TODAS_CLASSES_ATIVAS = Object.values(CORES_ATIVAS).flat();
+
     function mudarTela(botao) {
       document.getElementById('demo-frame').src = botao.dataset.src;
       document.querySelectorAll('.demo-tab').forEach(b => {
-        b.classList.toggle('border-orange-500', b === botao);
-        b.classList.toggle('text-white', b === botao);
-        b.classList.toggle('text-gray-400', b !== botao);
+        const ativo = b === botao;
+        b.classList.remove(...TODAS_CLASSES_ATIVAS);
+        if (ativo) b.classList.add(...CORES_ATIVAS[b.dataset.cor]);
+        b.classList.toggle('text-white', ativo);
+        b.classList.toggle('text-gray-400', !ativo);
+        b.querySelector('.marcador-atual').classList.toggle('hidden', !ativo);
       });
     }
     mudarTela(document.querySelector('.demo-tab'));
